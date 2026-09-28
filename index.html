@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini Clinic — Take a Number</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6FAF9; --paper-2:#EAF2F0; --ink:#0F2A2E; --ink-soft:#4B6560;
+  --teal:#146B62; --teal-deep:#0C4A44; --coral:#C94430; --line:#CFE0DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
+    --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
+  --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;}
+.wrap{max-width:520px; margin:0 auto; padding:28px 20px 48px;}
+.brand{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
+.brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;}
+.brand .mark svg{width:18px;height:18px;}
+.brand h1{font-size:1.15rem;font-weight:700;margin:0;letter-spacing:-0.01em;}
+.brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;margin-top:1px;}
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center;}
+.label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:3.4rem;letter-spacing:.04em;line-height:1;}
+.seam{border-top:2px dashed var(--line);margin:20px -26px;position:relative;}
+.seam::before,.seam::after{content:"";position:absolute;top:-11px;width:22px;height:22px;border-radius:50%;background:var(--paper);}
+.seam::before{left:-11px;} .seam::after{right:-11px;}
+.status{font-size:.95rem;color:var(--ink-soft);margin-top:4px;}
+.status.now{color:var(--coral);font-weight:700;animation:pulse 1.1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+button.primary{margin-top:22px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
+button.primary:active{background:var(--teal-deep);}
+button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;padding:4px;}
+.actions{text-align:center;margin-top:22px;}
+.field{text-align:left;margin-bottom:6px;}
+.fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
+.idInput{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.95rem;}
+.idInput:focus{outline:2px solid var(--teal);outline-offset:1px;}
+.fieldErr{color:var(--coral);font-size:.8rem;margin-top:6px;min-height:1em;}
+.empty{color:var(--ink-soft);font-size:.9rem;margin-top:18px;}
+footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+    <div><h1>Queue</h1><span class="sub">Mini Clinic — Patient</span></div>
+  </div>
+
+  <div class="card" id="patientCard"></div>
+  <div class="actions">
+    <div id="takeSection">
+      <div class="field">
+        <label for="idInput" class="fieldLabel">Identification number</label>
+        <input type="text" id="idInput" class="idInput" placeholder="e.g. student / staff ID" autocomplete="off">
+        <div class="fieldErr" id="idErr"></div>
+      </div>
+      <button class="primary" id="takeBtn">Take a queue number</button>
+    </div>
+    <button class="ghost" id="simBtn">+ simulate another arrival</button>
+    <div class="empty" id="patientQueueInfo"></div>
+  </div>
+  <footer id="modeNote">Connecting to live cloud…</footer>
+</div>
+
+<!-- 1. FIREBASE LIBRARIES FIRST -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- 2. FIREBASE INITIALIZATION -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBZ9TFjNVtcvSkj_qJsEeDgRxbCqR-u84M",
+    authDomain: "clinickiosk-ffbc0.firebaseapp.com",
+    databaseURL: "https://clinickiosk-ffbc0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "clinickiosk-ffbc0",
+    storageBucket: "clinickiosk-ffbc0.firebasestorage.app",
+    messagingSenderId: "657601053327",
+    appId: "1:657601053327:web:9b9adf3bd4f1f3810826fa",
+    measurementId: "G-KCBXXT70PY"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
+
+<!-- 3. APPLICATION LOGIC -->
+<script>
+let ticketsList = [], servingCreatedAt = null, myTicket = null;
+const fmt = n => 'A' + String(n).padStart(3, '0');
+const ticketNumber = t => 1 + ticketsList.filter(x => x.createdAt < t.createdAt).length;
+const waitingTickets = () => ticketsList.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
+
+function saveMyTicket(){ 
+  try{ localStorage.setItem('miniclinic_ticket', JSON.stringify(myTicket)); }catch(e){} 
+}
+function loadMyTicket(){ 
+  try{ const s = localStorage.getItem('miniclinic_ticket'); if(s) myTicket = JSON.parse(s); }catch(e){} 
+}
+
+function render(){
+  const w = waitingTickets();
+  document.getElementById('patientQueueInfo').textContent =
+    w.length + (w.length === 1 ? ' person currently waiting' : ' people currently waiting');
+
+  const card = document.getElementById('patientCard');
+  const takeSection = document.getElementById('takeSection');
+  const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
+
+  if(!mine){
+    card.innerHTML = `<div class="label">No ticket yet</div><div class="num" style="color:var(--ink-soft)">— — —</div>`;
+    takeSection.style.display = 'block';
+  } else {
+    let statusHtml;
+    if(servingCreatedAt === mine.createdAt){
+      statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
+    } else {
+      const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
+      statusHtml = ahead === 0
+        ? `<div class="status">You're next — please wait nearby</div>`
+        : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
+    }
+    card.innerHTML = `<div class="label">Your number</div><div class="num">${fmt(ticketNumber(mine))}</div><div class="seam"></div>${statusHtml}`;
+    takeSection.style.display = 'none';
+  }
+}
+
+// REALTIME FIREBASE SYNC LISTENER
+db.ref().on('value', (snapshot) => {
+  const data = snapshot.val() || {};
+  const ticketsObj = data.tickets || {};
+  
+  // Convert tickets object from Firebase into an array sorted by creation time
+  ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+  servingCreatedAt = data.servingCreatedAt || null;
+
+  document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
+  render();
+}, (error) => {
+  document.getElementById('modeNote').textContent = "Can't connect to live database.";
+});
+
+// TAKE TICKET ACTION
+document.getElementById('takeBtn').onclick = () => {
+  const idField = document.getElementById('idInput');
+  const idVal = idField.value.trim();
+  const errEl = document.getElementById('idErr');
+
+  if(!idVal){ 
+    errEl.textContent = 'Please enter your identification number'; 
+    idField.focus(); 
+    return; 
+  }
+  errEl.textContent = '';
+
+  const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+  const newTicket = {
+    id: ticketId,
+    idNumber: idVal,
+    createdAt: Date.now()
+  };
+
+  // Push new ticket directly to Firebase
+  db.ref('tickets/' + ticketId).set(newTicket).then(() => {
+    myTicket = newTicket;
+    saveMyTicket();
+    idField.value = '';
+  }).catch((err) => {
+    errEl.textContent = "Error issuing ticket. Try again.";
+  });
+};
+
+document.getElementById('idInput').addEventListener('keydown', e => { 
+  if(e.key === 'Enter') document.getElementById('takeBtn').click(); 
+});
+
+// SIMULATE ANOTHER ARRIVAL
+document.getElementById('simBtn').onclick = () => {
+  const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+  const simTicket = {
+    id: simId,
+    idNumber: 'SIM-' + Math.floor(1000 + Math.random() * 9000),
+    createdAt: Date.now()
+  };
+  db.ref('tickets/' + simId).set(simTicket);
+};
+
+// INITIALIZE LOCAL TICKET RECOVERY
+loadMyTicket();
+</script>
+</body>
+</html>
