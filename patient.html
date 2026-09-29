@@ -105,6 +105,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let ticketsList = [];
   let servingCreatedAt = null;
   let myTicket = null;
+  let pendingSubmissionId = null;
   let hasAlertedForCurrentTurn = false;
   let audioCtx = null;
 
@@ -243,6 +244,14 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
     servingCreatedAt = data.servingCreatedAt || null;
 
+    // AUTO-CLEAR PATIENT CARD WHEN STAFF CLEARS DATABASE
+    if (myTicket) {
+      const existsInDb = ticketsList.some(t => t.id === myTicket.id);
+      if (!existsInDb && pendingSubmissionId !== myTicket.id) {
+        clearMyTicket();
+      }
+    }
+
     document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
     render();
   }, (error) => {
@@ -286,17 +295,22 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       createdAt: Date.now()
     };
 
+    pendingSubmissionId = ticketId;
     myTicket = newTicket;
     hasAlertedForCurrentTurn = false;
     saveMyTicket();
     render();
 
     db.ref('tickets/' + ticketId).set(newTicket).then(() => {
+      pendingSubmissionId = null;
       idInput.value = '';
       takeBtn.disabled = false;
     }).catch((err) => {
+      pendingSubmissionId = null;
+      clearMyTicket();
       takeBtn.disabled = false;
       idErr.textContent = "Error issuing ticket. Try again.";
+      render();
     });
   };
 
