@@ -78,11 +78,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   <footer id="modeNote">Connecting to live cloud…</footer>
 </div>
 
-<!-- 1. FIREBASE LIBRARIES FIRST -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- 2. FIREBASE INITIALIZATION -->
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyBZ9TFjNVtcvSkj_qJsEeDgRxbCqR-u84M",
@@ -99,7 +97,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   const db = firebase.database();
 </script>
 
-<!-- 3. APPLICATION LOGIC -->
 <script>
 let ticketsList = [], servingCreatedAt = null, myTicket = null;
 const fmt = n => 'A' + String(n).padStart(3, '0');
@@ -112,6 +109,10 @@ function saveMyTicket(){
 function loadMyTicket(){ 
   try{ const s = localStorage.getItem('miniclinic_ticket'); if(s) myTicket = JSON.parse(s); }catch(e){} 
 }
+function clearMyTicket(){
+  myTicket = null;
+  try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
+}
 
 function render(){
   const w = waitingTickets();
@@ -120,32 +121,52 @@ function render(){
 
   const card = document.getElementById('patientCard');
   const takeSection = document.getElementById('takeSection');
+
+  // Auto clear if queue was reset by staff
+  if(myTicket && ticketsList.length === 0){
+    clearMyTicket();
+  }
+
   const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
 
-  if(!mine){
+  if(!myTicket){
     card.innerHTML = `<div class="label">No ticket yet</div><div class="num" style="color:var(--ink-soft)">— — —</div>`;
     takeSection.style.display = 'block';
   } else {
     let statusHtml;
     if(servingCreatedAt === mine.createdAt){
       statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
+    } else if (servingCreatedAt > mine.createdAt) {
+      statusHtml = `<div class="status">Your turn has passed / completed</div>`;
     } else {
       const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
       statusHtml = ahead === 0
         ? `<div class="status">You're next — please wait nearby</div>`
         : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
     }
-    card.innerHTML = `<div class="label">Your number</div><div class="num">${fmt(ticketNumber(mine))}</div><div class="seam"></div>${statusHtml}`;
+    card.innerHTML = `
+      <div class="label">Your number</div>
+      <div class="num">${fmt(ticketNumber(mine))}</div>
+      <div class="seam"></div>
+      ${statusHtml}
+      <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
+    `;
     takeSection.style.display = 'none';
+
+    const btn = document.getElementById('newTicketBtn');
+    if(btn){
+      btn.onclick = () => {
+        clearMyTicket();
+        render();
+      };
+    }
   }
 }
 
-// REALTIME FIREBASE SYNC LISTENER
 db.ref().on('value', (snapshot) => {
   const data = snapshot.val() || {};
   const ticketsObj = data.tickets || {};
   
-  // Convert tickets object from Firebase into an array sorted by creation time
   ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
   servingCreatedAt = data.servingCreatedAt || null;
 
@@ -155,7 +176,6 @@ db.ref().on('value', (snapshot) => {
   document.getElementById('modeNote').textContent = "Can't connect to live database.";
 });
 
-// TAKE TICKET ACTION
 document.getElementById('takeBtn').onclick = () => {
   const idField = document.getElementById('idInput');
   const idVal = idField.value.trim();
@@ -175,7 +195,6 @@ document.getElementById('takeBtn').onclick = () => {
     createdAt: Date.now()
   };
 
-  // Push new ticket directly to Firebase
   db.ref('tickets/' + ticketId).set(newTicket).then(() => {
     myTicket = newTicket;
     saveMyTicket();
@@ -189,7 +208,6 @@ document.getElementById('idInput').addEventListener('keydown', e => {
   if(e.key === 'Enter') document.getElementById('takeBtn').click(); 
 });
 
-// SIMULATE ANOTHER ARRIVAL
 document.getElementById('simBtn').onclick = () => {
   const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
   const simTicket = {
@@ -200,7 +218,6 @@ document.getElementById('simBtn').onclick = () => {
   db.ref('tickets/' + simId).set(simTicket);
 };
 
-// INITIALIZE LOCAL TICKET RECOVERY
 loadMyTicket();
 </script>
 </body>
