@@ -54,6 +54,7 @@ button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);f
 .fieldErr{color:var(--coral);font-size:.8rem;margin-top:6px;min-height:1em;}
 .empty{color:var(--ink-soft);font-size:.9rem;margin-top:18px;}
 footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;}
+.dev-tools{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line);display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
 </style>
 </head>
 <body>
@@ -73,7 +74,12 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       </div>
       <button class="primary" id="takeBtn">Take a queue number</button>
     </div>
-    <button class="ghost" id="simBtn" style="margin-top:14px;display:inline-block;">+ simulate another arrival</button>
+
+    <div class="dev-tools">
+      <button class="ghost" id="simBtn">+ simulate arrival</button>
+      <button class="ghost" id="resetDbBtn" style="color:var(--coral);">🧹 Clear cloud data (Reset to A001)</button>
+    </div>
+
     <div class="empty" id="patientQueueInfo">Loading queue status…</div>
   </div>
   <footer id="modeNote">Connecting to live cloud…</footer>
@@ -262,7 +268,6 @@ document.getElementById('takeBtn').onclick = (e) => {
     createdAt: Date.now()
   };
 
-  // Synchronously state update before Firebase database write
   myTicket = newTicket;
   hasAlertedForCurrentTurn = false;
   saveMyTicket();
@@ -289,6 +294,16 @@ document.getElementById('simBtn').onclick = (e) => {
     createdAt: Date.now()
   };
   db.ref('tickets/' + simId).set(simTicket);
+};
+
+document.getElementById('resetDbBtn').onclick = (e) => {
+  if(e) e.preventDefault();
+  if(confirm("Wipe all tickets from Firebase and reset queue back to A001?")){
+    db.ref().remove().then(() => {
+      clearMyTicket();
+      alert("Database cleared! Next ticket will be A001.");
+    });
+  }
 };
 
 document.getElementById('idInput').addEventListener('keydown', e => { 
