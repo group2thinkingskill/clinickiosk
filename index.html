@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mini Clinic — Take a Number</title>
+<title>Mini Clinic — Patient Kiosk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -59,20 +59,20 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 <div class="wrap">
   <div class="brand">
     <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
-    <div><h1>Queue</h1><span class="sub">Mini Clinic — Patient</span></div>
+    <div><h1>Queue System</h1><span class="sub">Mini Clinic — Patient</span></div>
   </div>
 
   <div class="card" id="patientCard"></div>
   <div class="actions">
     <div id="takeSection">
       <div class="field">
-        <label for="idInput" class="fieldLabel">Identification number</label>
+        <label for="idInput" class="fieldLabel">Identification Number (Digits Only)</label>
         <input type="text" id="idInput" class="idInput" placeholder="e.g. 102030" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
         <div class="fieldErr" id="idErr"></div>
       </div>
       <button class="primary" id="takeBtn">Take a queue number</button>
     </div>
-    <div class="empty" id="patientQueueInfo"></div>
+    <div class="empty" id="patientQueueInfo">Loading queue status…</div>
   </div>
   <footer id="modeNote">Connecting to live cloud…</footer>
 </div>
@@ -189,7 +189,7 @@ function render(){
         : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
     }
     card.innerHTML = `
-      <div class="label">Your number</div>
+      <div class="label">Your ticket number</div>
       <div class="num">${fmt(ticketNumber(mine))}</div>
       <div class="seam"></div>
       ${statusHtml}
@@ -273,6 +273,3 @@ loadMyTicket();
 </script>
 </body>
 </html>
-
-
-
