@@ -175,10 +175,6 @@ function render(){
   const card = document.getElementById('patientCard');
   const takeSection = document.getElementById('takeSection');
 
-  if(myTicket && ticketsList.length === 0){
-    clearMyTicket();
-  }
-
   const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
 
   if(!myTicket){
@@ -226,6 +222,11 @@ db.ref().on('value', (snapshot) => {
   ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
   servingCreatedAt = data.servingCreatedAt || null;
 
+  // Clear local ticket only if database was wiped by staff
+  if(myTicket && ticketsList.length === 0){
+    clearMyTicket();
+  }
+
   document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
   render();
 }, (error) => {
@@ -271,11 +272,11 @@ document.getElementById('takeBtn').onclick = (e) => {
   myTicket = newTicket;
   hasAlertedForCurrentTurn = false;
   saveMyTicket();
-  render();
 
   db.ref('tickets/' + ticketId).set(newTicket).then(() => {
     idField.value = '';
     takeBtn.disabled = false;
+    render();
   }).catch((err) => {
     clearMyTicket();
     takeBtn.disabled = false;
