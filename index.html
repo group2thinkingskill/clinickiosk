@@ -72,6 +72,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       </div>
       <button class="primary" id="takeBtn">Take a queue number</button>
     </div>
+    <button class="ghost" id="simBtn" style="margin-top:14px;display:inline-block;">+ simulate another arrival</button>
     <div class="empty" id="patientQueueInfo">Loading queue status…</div>
   </div>
   <footer id="modeNote">Connecting to live cloud…</footer>
@@ -102,17 +103,21 @@ let hasAlertedForCurrentTurn = false;
 let audioCtx = null;
 
 function initAudio(){
-  if(!audioCtx){
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if(audioCtx.state === 'suspended'){
-    audioCtx.resume();
-  }
+  try {
+    if(!audioCtx){
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) audioCtx = new AudioCtx();
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){
+      audioCtx.resume();
+    }
+  } catch(e) {}
 }
 
 function playTurnChime(){
   try {
     initAudio();
+    if(!audioCtx) return;
     const now = audioCtx.currentTime;
 
     const osc1 = audioCtx.createOscillator();
@@ -225,7 +230,8 @@ document.getElementById('idInput').addEventListener('input', e => {
   document.getElementById('idErr').textContent = '';
 });
 
-document.getElementById('takeBtn').onclick = () => {
+document.getElementById('takeBtn').onclick = (e) => {
+  if(e) e.preventDefault();
   initAudio();
   const idField = document.getElementById('idInput');
   const idVal = idField.value.trim();
@@ -260,6 +266,18 @@ document.getElementById('takeBtn').onclick = () => {
   }).catch((err) => {
     errEl.textContent = "Error issuing ticket. Try again.";
   });
+};
+
+document.getElementById('simBtn').onclick = (e) => {
+  if(e) e.preventDefault();
+  initAudio();
+  const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+  const simTicket = {
+    id: simId,
+    idNumber: String(Math.floor(10000 + Math.random() * 90000)),
+    createdAt: Date.now()
+  };
+  db.ref('tickets/' + simId).set(simTicket);
 };
 
 document.getElementById('idInput').addEventListener('keydown', e => { 
