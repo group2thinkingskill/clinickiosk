@@ -72,7 +72,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       </div>
       <button class="primary" id="takeBtn">Take a queue number</button>
     </div>
-    <button class="ghost" id="simBtn">+ simulate another arrival</button>
     <div class="empty" id="patientQueueInfo"></div>
   </div>
   <footer id="modeNote">Connecting to live cloud…</footer>
@@ -116,7 +115,6 @@ function playTurnChime(){
     initAudio();
     const now = audioCtx.currentTime;
 
-    // Tone 1: High pitch (C5)
     const osc1 = audioCtx.createOscillator();
     const gain1 = audioCtx.createGain();
     osc1.type = 'sine';
@@ -128,7 +126,6 @@ function playTurnChime(){
     osc1.start(now);
     osc1.stop(now + 0.35);
 
-    // Tone 2: Higher pitch (E5)
     const osc2 = audioCtx.createOscillator();
     const gain2 = audioCtx.createGain();
     osc2.type = 'sine';
@@ -166,7 +163,6 @@ function render(){
   const card = document.getElementById('patientCard');
   const takeSection = document.getElementById('takeSection');
 
-  // Auto clear if queue was reset by staff
   if(myTicket && ticketsList.length === 0){
     clearMyTicket();
   }
@@ -224,7 +220,6 @@ db.ref().on('value', (snapshot) => {
   document.getElementById('modeNote').textContent = "Can't connect to live database.";
 });
 
-// Real-time restriction: Automatically strips out non-digit characters as user types
 document.getElementById('idInput').addEventListener('input', e => {
   e.target.value = e.target.value.replace(/\D/g, '');
   document.getElementById('idErr').textContent = '';
@@ -242,7 +237,6 @@ document.getElementById('takeBtn').onclick = () => {
     return; 
   }
 
-  // Strict numbers-only validation check
   if(!/^\d+$/.test(idVal)){
     errEl.textContent = 'Only numbers are allowed (0-9)';
     idField.focus();
@@ -272,18 +266,6 @@ document.getElementById('idInput').addEventListener('keydown', e => {
   if(e.key === 'Enter') document.getElementById('takeBtn').click(); 
 });
 
-document.getElementById('simBtn').onclick = () => {
-  initAudio();
-  const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-  const simTicket = {
-    id: simId,
-    idNumber: String(Math.floor(10000 + Math.random() * 90000)),
-    createdAt: Date.now()
-  };
-  db.ref('tickets/' + simId).set(simTicket);
-};
-
-// Enable audio unlock on any screen touch
 document.addEventListener('touchstart', initAudio, { once: true });
 document.addEventListener('click', initAudio, { once: true });
 
