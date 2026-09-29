@@ -77,7 +77,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
     <div class="dev-tools">
       <button class="ghost" id="simBtn">+ simulate arrival</button>
-      <button class="ghost" id="resetDbBtn" style="color:var(--coral);">🧹 Clear cloud data (Reset to A001)</button>
     </div>
 
     <div class="empty" id="patientQueueInfo">Loading queue status…</div>
@@ -102,219 +101,225 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-</script>
 
-<script>
-let ticketsList = [], servingCreatedAt = null, myTicket = null;
-let hasAlertedForCurrentTurn = false;
-let audioCtx = null;
+  let ticketsList = [];
+  let servingCreatedAt = null;
+  let myTicket = null;
+  let hasAlertedForCurrentTurn = false;
+  let audioCtx = null;
 
-function initAudio(){
-  try {
-    if(!audioCtx){
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) audioCtx = new AudioCtx();
-    }
-    if(audioCtx && audioCtx.state === 'suspended'){
-      audioCtx.resume();
-    }
-  } catch(e) {}
-}
-
-function playTurnChime(){
-  try {
-    initAudio();
-    if(!audioCtx) return;
-    const now = audioCtx.currentTime;
-
-    const osc1 = audioCtx.createOscillator();
-    const gain1 = audioCtx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(523.25, now);
-    gain1.gain.setValueAtTime(0.3, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc1.connect(gain1);
-    gain1.connect(audioCtx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.35);
-
-    const osc2 = audioCtx.createOscillator();
-    const gain2 = audioCtx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(659.25, now + 0.18);
-    gain2.gain.setValueAtTime(0.3, now + 0.18);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
-    osc2.connect(gain2);
-    gain2.connect(audioCtx.destination);
-    osc2.start(now + 0.18);
-    osc2.stop(now + 0.65);
-  } catch(e){}
-}
-
-const fmt = n => 'A' + String(n).padStart(3, '0');
-const ticketNumber = t => 1 + ticketsList.filter(x => x.createdAt < t.createdAt).length;
-const waitingTickets = () => ticketsList.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
-
-function saveMyTicket(){ 
-  try{ localStorage.setItem('miniclinic_ticket', JSON.stringify(myTicket)); }catch(e){} 
-}
-function loadMyTicket(){ 
-  try{ const s = localStorage.getItem('miniclinic_ticket'); if(s) myTicket = JSON.parse(s); }catch(e){} 
-}
-function clearMyTicket(){
-  myTicket = null;
-  hasAlertedForCurrentTurn = false;
-  try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
-}
-
-function render(){
-  const w = waitingTickets();
-  document.getElementById('patientQueueInfo').textContent =
-    w.length + (w.length === 1 ? ' person currently waiting' : ' people currently waiting');
-
-  const card = document.getElementById('patientCard');
-  const takeSection = document.getElementById('takeSection');
-
-  const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
-
-  if(!myTicket){
-    card.innerHTML = `<div class="label">No ticket yet</div><div class="num" style="color:var(--ink-soft)">— — —</div>`;
-    takeSection.style.display = 'block';
-  } else {
-    let statusHtml;
-    if(servingCreatedAt === mine.createdAt){
-      statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
-      if(!hasAlertedForCurrentTurn){
-        playTurnChime();
-        hasAlertedForCurrentTurn = true;
+  function initAudio(){
+    try {
+      if(!audioCtx){
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
       }
-    } else if (servingCreatedAt > mine.createdAt) {
-      statusHtml = `<div class="status">Your turn has passed / completed</div>`;
+      if(audioCtx && audioCtx.state === 'suspended'){
+        audioCtx.resume();
+      }
+    } catch(e) {}
+  }
+
+  function playTurnChime(){
+    try {
+      initAudio();
+      if(!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523.25, now);
+      gain1.gain.setValueAtTime(0.3, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(659.25, now + 0.18);
+      gain2.gain.setValueAtTime(0.3, now + 0.18);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.18);
+      osc2.stop(now + 0.65);
+    } catch(e){}
+  }
+
+  const fmt = n => 'A' + String(n).padStart(3, '0');
+
+  function getTicketNumber(t){
+    if(!t) return 1;
+    const idx = ticketsList.findIndex(x => x.id === t.id);
+    if(idx !== -1) return idx + 1;
+    const countBefore = ticketsList.filter(x => x.createdAt < t.createdAt).length;
+    return countBefore + 1;
+  }
+
+  function getWaitingTickets(){
+    if(!servingCreatedAt) return ticketsList;
+    return ticketsList.filter(t => t.createdAt > servingCreatedAt);
+  }
+
+  function saveMyTicket(){ 
+    try{ 
+      if(myTicket) localStorage.setItem('miniclinic_ticket', JSON.stringify(myTicket));
+      else localStorage.removeItem('miniclinic_ticket');
+    }catch(e){} 
+  }
+
+  function loadMyTicket(){ 
+    try{ 
+      const s = localStorage.getItem('miniclinic_ticket'); 
+      if(s) myTicket = JSON.parse(s); 
+    }catch(e){} 
+  }
+
+  function clearMyTicket(){
+    myTicket = null;
+    hasAlertedForCurrentTurn = false;
+    try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
+  }
+
+  function render(){
+    const w = getWaitingTickets();
+    const countEl = document.getElementById('patientQueueInfo');
+    if(countEl){
+      countEl.textContent = w.length + (w.length === 1 ? ' person currently waiting' : ' people currently waiting');
+    }
+
+    const card = document.getElementById('patientCard');
+    const takeSection = document.getElementById('takeSection');
+
+    const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
+
+    if(!mine){
+      card.innerHTML = `<div class="label">No ticket yet</div><div class="num" style="color:var(--ink-soft)">— — —</div>`;
+      takeSection.style.display = 'block';
     } else {
-      const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
-      statusHtml = ahead === 0
-        ? `<div class="status">You're next — please wait nearby</div>`
-        : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
+      let statusHtml;
+      if(servingCreatedAt && mine.createdAt === servingCreatedAt){
+        statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
+        if(!hasAlertedForCurrentTurn){
+          playTurnChime();
+          hasAlertedForCurrentTurn = true;
+        }
+      } else if (servingCreatedAt && mine.createdAt < servingCreatedAt) {
+        statusHtml = `<div class="status">Your turn has passed / completed</div>`;
+      } else {
+        const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
+        statusHtml = ahead === 0
+          ? `<div class="status">You're next — please wait nearby</div>`
+          : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="label">Your ticket number</div>
+        <div class="num">${fmt(getTicketNumber(mine))}</div>
+        <div class="seam"></div>
+        ${statusHtml}
+        <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
+      `;
+      takeSection.style.display = 'none';
+
+      const btn = document.getElementById('newTicketBtn');
+      if(btn){
+        btn.onclick = () => {
+          clearMyTicket();
+          render();
+        };
+      }
     }
-    card.innerHTML = `
-      <div class="label">Your ticket number</div>
-      <div class="num">${fmt(ticketNumber(mine))}</div>
-      <div class="seam"></div>
-      ${statusHtml}
-      <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
-    `;
-    takeSection.style.display = 'none';
-
-    const btn = document.getElementById('newTicketBtn');
-    if(btn){
-      btn.onclick = () => {
-        clearMyTicket();
-        render();
-      };
-    }
-  }
-}
-
-db.ref().on('value', (snapshot) => {
-  const data = snapshot.val() || {};
-  const ticketsObj = data.tickets || {};
-  
-  ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
-  servingCreatedAt = data.servingCreatedAt || null;
-
-  // Clear local ticket only if database was wiped by staff
-  if(myTicket && ticketsList.length === 0){
-    clearMyTicket();
   }
 
-  document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
-  render();
-}, (error) => {
-  document.getElementById('modeNote').textContent = "Can't connect to live database.";
-});
+  db.ref().on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    const ticketsObj = data.tickets || {};
+    
+    ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+    servingCreatedAt = data.servingCreatedAt || null;
 
-document.getElementById('idInput').addEventListener('input', e => {
-  e.target.value = e.target.value.replace(/\D/g, '');
-  document.getElementById('idErr').textContent = '';
-});
-
-document.getElementById('takeBtn').onclick = (e) => {
-  if(e) e.preventDefault();
-  initAudio();
-  
-  const takeBtn = document.getElementById('takeBtn');
-  const idField = document.getElementById('idInput');
-  const idVal = idField.value.trim();
-  const errEl = document.getElementById('idErr');
-
-  if(!idVal){ 
-    errEl.textContent = 'Please enter your identification number'; 
-    idField.focus(); 
-    return; 
-  }
-
-  if(!/^\d+$/.test(idVal)){
-    errEl.textContent = 'Only numbers are allowed (0-9)';
-    idField.focus();
-    return;
-  }
-
-  errEl.textContent = '';
-  takeBtn.disabled = true;
-
-  const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-  const newTicket = {
-    id: ticketId,
-    idNumber: idVal,
-    createdAt: Date.now()
-  };
-
-  myTicket = newTicket;
-  hasAlertedForCurrentTurn = false;
-  saveMyTicket();
-
-  db.ref('tickets/' + ticketId).set(newTicket).then(() => {
-    idField.value = '';
-    takeBtn.disabled = false;
+    document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
     render();
-  }).catch((err) => {
-    clearMyTicket();
-    takeBtn.disabled = false;
-    errEl.textContent = "Error issuing ticket. Try again.";
-    render();
+  }, (error) => {
+    document.getElementById('modeNote').textContent = "Can't connect to live database.";
   });
-};
 
-document.getElementById('simBtn').onclick = (e) => {
-  if(e) e.preventDefault();
-  initAudio();
-  const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-  const simTicket = {
-    id: simId,
-    idNumber: String(Math.floor(10000 + Math.random() * 90000)),
-    createdAt: Date.now()
-  };
-  db.ref('tickets/' + simId).set(simTicket);
-};
+  const idInput = document.getElementById('idInput');
+  const takeBtn = document.getElementById('takeBtn');
+  const idErr = document.getElementById('idErr');
 
-document.getElementById('resetDbBtn').onclick = (e) => {
-  if(e) e.preventDefault();
-  if(confirm("Wipe all tickets from Firebase and reset queue back to A001?")){
-    db.ref().remove().then(() => {
-      clearMyTicket();
-      alert("Database cleared! Next ticket will be A001.");
+  idInput.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '');
+    idErr.textContent = '';
+  });
+
+  takeBtn.onclick = (e) => {
+    if(e) e.preventDefault();
+    initAudio();
+    
+    const idVal = idInput.value.trim();
+
+    if(!idVal){ 
+      idErr.textContent = 'Please enter your identification number'; 
+      idInput.focus(); 
+      return; 
+    }
+
+    if(!/^\d+$/.test(idVal)){
+      idErr.textContent = 'Only numbers are allowed (0-9)';
+      idInput.focus();
+      return;
+    }
+
+    idErr.textContent = '';
+    takeBtn.disabled = true;
+
+    const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const newTicket = {
+      id: ticketId,
+      idNumber: idVal,
+      createdAt: Date.now()
+    };
+
+    myTicket = newTicket;
+    hasAlertedForCurrentTurn = false;
+    saveMyTicket();
+    render();
+
+    db.ref('tickets/' + ticketId).set(newTicket).then(() => {
+      idInput.value = '';
+      takeBtn.disabled = false;
+    }).catch((err) => {
+      takeBtn.disabled = false;
+      idErr.textContent = "Error issuing ticket. Try again.";
     });
-  }
-};
+  };
 
-document.getElementById('idInput').addEventListener('keydown', e => { 
-  if(e.key === 'Enter') document.getElementById('takeBtn').click(); 
-});
+  document.getElementById('simBtn').onclick = (e) => {
+    if(e) e.preventDefault();
+    initAudio();
+    const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const simTicket = {
+      id: simId,
+      idNumber: String(Math.floor(10000 + Math.random() * 90000)),
+      createdAt: Date.now()
+    };
+    db.ref('tickets/' + simId).set(simTicket);
+  };
 
-document.addEventListener('touchstart', initAudio, { once: true });
-document.addEventListener('click', initAudio, { once: true });
+  idInput.addEventListener('keydown', e => { 
+    if(e.key === 'Enter') takeBtn.click(); 
+  });
 
-loadMyTicket();
+  document.addEventListener('touchstart', initAudio, { once: true });
+  document.addEventListener('click', initAudio, { once: true });
+
+  loadMyTicket();
 </script>
 </body>
 </html>
