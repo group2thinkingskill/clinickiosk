@@ -99,6 +99,49 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
 <script>
 let ticketsList = [], servingCreatedAt = null, myTicket = null;
+let hasAlertedForCurrentTurn = false;
+let audioCtx = null;
+
+function initAudio(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(audioCtx.state === 'suspended'){
+    audioCtx.resume();
+  }
+}
+
+function playTurnChime(){
+  try {
+    initAudio();
+    const now = audioCtx.currentTime;
+
+    // Tone 1: High pitch (C5)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(523.25, now);
+    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    // Tone 2: Higher pitch (E5)
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(659.25, now + 0.18);
+    gain2.gain.setValueAtTime(0.3, now + 0.18);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(now + 0.18);
+    osc2.stop(now + 0.65);
+  } catch(e){}
+}
+
 const fmt = n => 'A' + String(n).padStart(3, '0');
 const ticketNumber = t => 1 + ticketsList.filter(x => x.createdAt < t.createdAt).length;
 const waitingTickets = () => ticketsList.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
@@ -111,6 +154,7 @@ function loadMyTicket(){
 }
 function clearMyTicket(){
   myTicket = null;
+  hasAlertedForCurrentTurn = false;
   try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
 }
 
@@ -136,6 +180,10 @@ function render(){
     let statusHtml;
     if(servingCreatedAt === mine.createdAt){
       statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
+      if(!hasAlertedForCurrentTurn){
+        playTurnChime();
+        hasAlertedForCurrentTurn = true;
+      }
     } else if (servingCreatedAt > mine.createdAt) {
       statusHtml = `<div class="status">Your turn has passed / completed</div>`;
     } else {
@@ -177,6 +225,7 @@ db.ref().on('value', (snapshot) => {
 });
 
 document.getElementById('takeBtn').onclick = () => {
+  initAudio(); // Unlocks audio on user gesture
   const idField = document.getElementById('idInput');
   const idVal = idField.value.trim();
   const errEl = document.getElementById('idErr');
@@ -197,6 +246,7 @@ document.getElementById('takeBtn').onclick = () => {
 
   db.ref('tickets/' + ticketId).set(newTicket).then(() => {
     myTicket = newTicket;
+    hasAlertedForCurrentTurn = false;
     saveMyTicket();
     idField.value = '';
   }).catch((err) => {
@@ -209,6 +259,7 @@ document.getElementById('idInput').addEventListener('keydown', e => {
 });
 
 document.getElementById('simBtn').onclick = () => {
+  initAudio();
   const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
   const simTicket = {
     id: simId,
@@ -217,6 +268,10 @@ document.getElementById('simBtn').onclick = () => {
   };
   db.ref('tickets/' + simId).set(simTicket);
 };
+
+// Enable audio unlock on any screen touch
+document.addEventListener('touchstart', initAudio, { once: true });
+document.addEventListener('click', initAudio, { once: true });
 
 loadMyTicket();
 </script>
