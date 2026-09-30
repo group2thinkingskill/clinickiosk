@@ -10,29 +10,31 @@
 <style>
 :root{
   --paper:#F6FAF9; --paper-2:#EAF2F0; --ink:#0F2A2E; --ink-soft:#4B6560;
-  --teal:#146B62; --coral:#C94430; --line:#CFE0DC;
+  --teal:#146B62; --coral:#C94430; --amber:#D99B00; --line:#CFE0DC;
 }
 @media (prefers-color-scheme: dark){
-  :root{ --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7; --teal:#4FBFAF; --coral:#EF7B64; --line:#23413C; }
+  :root{ --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7; --teal:#4FBFAF; --coral:#EF7B64; --amber:#F3C649; --line:#23413C; }
 }
 *{box-sizing:border-box;}
 body{margin:0; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',sans-serif;}
-.wrap{max-width:800px; margin:0 auto; padding:28px 20px 48px;}
-.header{display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--line); padding-bottom:16px;}
+.wrap{max-width:850px; margin:0 auto; padding:28px 20px 48px;}
+.header{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:16px; flex-wrap:wrap; gap:12px;}
 .header h1{font-size:1.4rem; margin:0;}
 .date-badge{font-size:.85rem; color:var(--ink-soft); font-weight:600;}
+.header-actions{display:flex; gap:10px; flex-wrap:wrap;}
 .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;}
 .card{background:var(--paper-2); border:1px solid var(--line); border-radius:14px; padding:20px; text-align:center;}
 .label{font-size:.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;}
 .stat{font-family:'IBM Plex Mono',monospace; font-size:2.8rem; font-weight:700; color:var(--teal);}
-button.btn{padding:12px 20px; border:none; border-radius:8px; background:var(--teal); color:#fff; font-weight:600; cursor:pointer;}
+button.btn{padding:10px 16px; border:none; border-radius:8px; background:var(--teal); color:#fff; font-weight:600; cursor:pointer; font-size:.88rem;}
 button.btn-coral{background:var(--coral);}
+button.btn-amber{background:var(--amber); color:#000;}
 button.btn:hover{opacity:0.9;}
 table{width:100%; border-collapse:collapse; margin-top:16px; background:var(--paper-2); border-radius:12px; overflow:hidden; border:1px solid var(--line);}
 th, td{padding:12px 16px; text-align:left; border-bottom:1px solid var(--line); font-size:.9rem;}
 th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.05em;}
 .status-badge{display:inline-block; padding:3px 8px; border-radius:6px; font-size:.75rem; font-weight:700;}
-.st-waiting{background:#E0A10022; color:#D99B00;}
+.st-waiting{background:#E0A10022; color:var(--amber);}
 .st-serving{background:#146B6222; color:var(--teal);}
 .st-done{background:#88888822; color:var(--ink-soft);}
 .top-bar{display:flex; justify-content:space-between; align-items:center; margin-top:24px;}
@@ -45,12 +47,15 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
       <h1>Staff Control Dashboard</h1>
       <div id="todayDate" class="date-badge"></div>
     </div>
-    <button class="btn btn-coral" id="resetBtn">🧹 Clear / Reset All Records</button>
+    <div class="header-actions">
+      <button class="btn btn-amber" id="clearQueueBtn">🧹 Clear Active Queue (Keep Log)</button>
+      <button class="btn btn-coral" id="resetAllBtn">🗑️ Reset Everything</button>
+    </div>
   </div>
 
   <div class="grid">
     <div class="card">
-      <div class="label">Total Patients Today</div>
+      <div class="label">Total Patients Logged Today</div>
       <div class="stat" id="totalCount">0</div>
     </div>
     <div class="card">
@@ -62,7 +67,7 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
 
   <div class="top-bar">
     <h2 style="font-size:1.1rem; margin:0;">Today's Patient Log</h2>
-    <span id="waitingCount" style="font-size:.85rem; color:var(--ink-soft);">0 waiting</span>
+    <span id="waitingCount" style="font-size:.85rem; color:var(--ink-soft);">0 active waiting</span>
   </div>
 
   <table>
@@ -103,7 +108,9 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  let ticketsList = [];
+  let activeTickets = [];
+  let historyTickets = [];
+  let allPatients = [];
   let servingCreatedAt = null;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
@@ -111,41 +118,52 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
     const ticketsObj = data.tickets || {};
-    
-    ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+    const historyObj = data.history || {};
+
+    activeTickets = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+    historyTickets = Object.values(historyObj).sort((a, b) => a.createdAt - b.createdAt);
+
+    // Merge active and history list without duplicates
+    const patientMap = {};
+    historyTickets.forEach(t => patientMap[t.id] = { ...t, isArchived: true });
+    activeTickets.forEach(t => patientMap[t.id] = { ...t, isArchived: false });
+
+    allPatients = Object.values(patientMap).sort((a, b) => a.createdAt - b.createdAt);
     servingCreatedAt = data.servingCreatedAt || null;
 
     renderStaff();
   });
 
   function renderStaff(){
-    document.getElementById('totalCount').textContent = ticketsList.length;
+    document.getElementById('totalCount').textContent = allPatients.length;
 
-    const currentServingTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
+    const currentServingTicket = activeTickets.find(t => t.createdAt === servingCreatedAt);
     const servingNumEl = document.getElementById('servingNum');
     
     if(currentServingTicket){
-      const idx = ticketsList.findIndex(t => t.id === currentServingTicket.id);
+      const idx = allPatients.findIndex(t => t.id === currentServingTicket.id);
       servingNumEl.textContent = fmt(idx + 1);
     } else {
       servingNumEl.textContent = "— — —";
     }
 
-    const waiting = ticketsList.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
-    document.getElementById('waitingCount').textContent = waiting.length + " waiting";
+    const waiting = activeTickets.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
+    document.getElementById('waitingCount').textContent = waiting.length + " active waiting";
 
     const tbody = document.getElementById('patientTableBody');
-    if(ticketsList.length === 0){
+    if(allPatients.length === 0){
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--ink-soft);">No patients checked in today.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = ticketsList.map((t, i) => {
+    tbody.innerHTML = allPatients.map((t, i) => {
       const ticketNo = fmt(i + 1);
       const timeStr = new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
       let stClass = "st-waiting", stText = "Waiting";
-      if(servingCreatedAt && t.createdAt === servingCreatedAt){
+      if(t.isArchived){
+        stClass = "st-done"; stText = "Archived / Cleared";
+      } else if(servingCreatedAt && t.createdAt === servingCreatedAt){
         stClass = "st-serving"; stText = "Serving";
       } else if(servingCreatedAt && t.createdAt < servingCreatedAt){
         stClass = "st-done"; stText = "Completed";
@@ -165,7 +183,7 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
   }
 
   document.getElementById('callNextBtn').onclick = () => {
-    const waiting = ticketsList.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
+    const waiting = activeTickets.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
     if(waiting.length === 0){
       alert("No waiting patients in queue.");
       return;
@@ -174,10 +192,37 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
     db.ref('servingCreatedAt').set(nextTicket.createdAt);
   };
 
-  document.getElementById('resetBtn').onclick = () => {
-    if(confirm("Are you sure you want to clear all patient records and reset the queue back to A001?")){
+  // CLEAR ACTIVE QUEUE ONLY (KEEPS TODAY'S LOG IN HISTORY)
+  document.getElementById('clearQueueBtn').onclick = () => {
+    if(activeTickets.length === 0){
+      alert("Active queue is already empty.");
+      return;
+    }
+
+    if(confirm("Clear active queue for patient screens? Today's patient names and total counts will remain saved in the log.")){
+      db.ref('tickets').once('value').then(snap => {
+        const currTickets = snap.val() || {};
+        const updates = {};
+        
+        // Move active tickets to history node
+        Object.keys(currTickets).forEach(key => {
+          updates['history/' + key] = currTickets[key];
+        });
+        updates['tickets'] = null;
+        updates['servingCreatedAt'] = null;
+
+        return db.ref().update(updates);
+      }).then(() => {
+        alert("Active queue cleared! Patient screens are reset, records preserved.");
+      });
+    }
+  };
+
+  // FULL RESET (WIPES EVERYTHING INCLUDING LOGS)
+  document.getElementById('resetAllBtn').onclick = () => {
+    if(confirm("Are you sure you want to delete ALL records and reset the entire system?")){
       db.ref().remove().then(() => {
-        alert("Records cleared! Next ticket will be A001.");
+        alert("All records and queue data wiped.");
       });
     }
   };
