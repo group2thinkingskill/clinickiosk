@@ -195,8 +195,27 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e){}
   }
 
-  function notifyPatientTurn(ticketStr, patientName){
+  // Telegram helper function
+  function sendTelegramAlert(chatId, messageText){
+    if(!chatId) return;
+    fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: messageText,
+        parse_mode: 'Markdown'
+      })
+    })
+    .then(res => res.json())
+    .then(res => console.log("Telegram push result:", res))
+    .catch(err => console.error("Telegram send error:", err));
+  }
+
+  function notifyPatientTurn(ticketStr, patientName, chatId){
     playTurnChime();
+
+    // 1. Browser Notification
     if ("Notification" in window && Notification.permission === "granted") {
       try {
         new Notification("🏥 Mini Clinic — IT'S YOUR TURN!", {
@@ -205,6 +224,12 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
           requireInteraction: true
         });
       } catch(e){}
+    }
+
+    // 2. Telegram Push Notification
+    if(chatId){
+      const msg = `🚨 *IT'S YOUR TURN!*\n\nHi ${patientName}, ticket *${ticketStr}* is now being called! Please proceed into the consultation room immediately.`;
+      sendTelegramAlert(chatId, msg);
     }
   }
 
@@ -221,18 +246,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       } catch(e){}
     }
 
-    // 2. Direct Telegram Notification to phone
+    // 2. Telegram Push Notification
     if (chatId) {
       const msg = `🔔 *Mini Clinic Alert*\n\nHi ${patientName}, your ticket *${ticketStr}* has *2 people ahead* of you! Please get ready and head over to the clinic.`;
-      fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: msg,
-          parse_mode: 'Markdown'
-        })
-      }).catch(err => console.error("Telegram send error:", err));
+      sendTelegramAlert(chatId, msg);
     }
   }
 
@@ -273,19 +290,33 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
   }
 
+  // ACCURATE TELEGRAM LINK POLLING (Checks specifically for your ticket code)
   function startTelegramPolling(ticketId, ticketStr){
     if(tgPollTimer) clearInterval(tgPollTimer);
+    
     tgPollTimer = setInterval(() => {
       fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/getUpdates`)
         .then(res => res.json())
         .then(data => {
-          if(data.ok && data.result){
-            for(let u of data.result){
+          if(data.ok && data.result && data.result.length > 0){
+            // Search updates from newest to oldest
+            const updates = data.result.slice().reverse();
+            for(let u of updates){
               if(u.message && u.message.text){
                 const text = u.message.text.toUpperCase();
-                if(text.includes(ticketId.toUpperCase()) || text.includes(ticketStr.toUpperCase()) || text.includes('/START')){
+                const targetTicket = ticketStr.toUpperCase();
+                const targetId = ticketId.toUpperCase();
+                
+                // Only match if the message explicitly contains ticketStr (e.g. "A001") or ticket ID
+                if(text.includes(targetTicket) || text.includes(targetId)){
                   const chatId = u.message.chat.id;
+                  
+                  // Update Firebase with Chat ID
                   db.ref('tickets/' + ticketId + '/telegramChatId').set(chatId);
+                  
+                  // Send confirmation directly inside Telegram
+                  sendTelegramAlert(chatId, `✅ *Telegram Alerts Activated!*\n\nYour ticket *${ticketStr}* is linked. We will notify you when 2 people are ahead and when it's your turn!`);
+                  
                   clearInterval(tgPollTimer);
                   break;
                 }
@@ -330,7 +361,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       if(servingCreatedAt && mine.createdAt === servingCreatedAt){
         statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
         if(!hasAlertedForCurrentTurn){
-          notifyPatientTurn(ticketStr, patientName);
+          notifyPatientTurn(ticketStr, patientName, mine.telegramChatId);
           hasAlertedForCurrentTurn = true;
         }
       } else if (servingCreatedAt && mine.createdAt < servingCreatedAt) {
@@ -338,7 +369,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
 
-        // Audio Chime + Direct Telegram Push Notification Trigger when 2 people ahead
         if (ahead === 2 && !hasAlerted2Ahead) {
           notifyPatient2Ahead(ticketStr, patientName, mine.telegramChatId);
           hasAlerted2Ahead = true;
