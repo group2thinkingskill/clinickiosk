@@ -123,7 +123,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let myTicket = null;
   let pendingSubmissionId = null;
   
-  // Track alert states to avoid repeating audio chimes constantly
   let hasAlertedForCurrentTurn = false;
   let hasAlerted2Ahead = false;
   
@@ -209,8 +208,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     }
   }
 
-  function notifyPatient2Ahead(ticketStr, patientName){
+  function notifyPatient2Ahead(ticketStr, patientName, chatId){
     playTurnChime();
+    
+    // 1. Browser Notification
     if ("Notification" in window && Notification.permission === "granted") {
       try {
         new Notification("🔔 Mini Clinic Queue Alert", {
@@ -218,6 +219,20 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
           tag: "clinic-2ahead-alert"
         });
       } catch(e){}
+    }
+
+    // 2. Direct Telegram Notification to phone
+    if (chatId) {
+      const msg = `🔔 *Mini Clinic Alert*\n\nHi ${patientName}, your ticket *${ticketStr}* has *2 people ahead* of you! Please get ready and head over to the clinic.`;
+      fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: msg,
+          parse_mode: 'Markdown'
+        })
+      }).catch(err => console.error("Telegram send error:", err));
     }
   }
 
@@ -323,9 +338,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
 
-        // Audio Chime & Push Notification Trigger when 2 people ahead
+        // Audio Chime + Direct Telegram Push Notification Trigger when 2 people ahead
         if (ahead === 2 && !hasAlerted2Ahead) {
-          notifyPatient2Ahead(ticketStr, patientName);
+          notifyPatient2Ahead(ticketStr, patientName, mine.telegramChatId);
           hasAlerted2Ahead = true;
         }
 
