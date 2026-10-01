@@ -77,7 +77,7 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
         <th>Ticket</th>
         <th>Time</th>
         <th>Patient Name</th>
-        <th>ID Number</th>
+        <th>Telegram</th>
         <th>Status</th>
       </tr>
     </thead>
@@ -90,6 +90,8 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+  const TG_BOT_TOKEN = "8985040386:AAGcYnUq7IZ55rmNdL0ypub6-fN7aMv8SoY";
+
   const firebaseConfig = {
     apiKey: "AIzaSyBZ9TFjNVtcvSkj_qJsEeDgRxbCqR-u84M",
     authDomain: "clinickiosk-ffbc0.firebaseapp.com",
@@ -115,6 +117,47 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
+  function sendTelegramMessage(chatId, messageText) {
+    if (!chatId) return;
+    fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: messageText,
+        parse_mode: 'Markdown'
+      })
+    }).catch(err => console.error("Telegram Send Error:", err));
+  }
+
+  function checkAndTriggerTelegramAlerts() {
+    const waiting = activeTickets.filter(t => servingCreatedAt == null || t.createdAt > servingCreatedAt);
+
+    activeTickets.forEach((t) => {
+      if (!t.telegramChatId) return;
+
+      const idx = allPatients.findIndex(p => p.id === t.id);
+      const ticketNo = fmt(idx + 1);
+
+      // 1. ALERT WHEN 2 PEOPLE AHEAD
+      if (servingCreatedAt && t.createdAt > servingCreatedAt) {
+        const ahead = waiting.filter(w => w.createdAt < t.createdAt).length;
+        if (ahead === 2 && !t.notified2Ahead) {
+          const msg = `🔔 *Mini Clinic Queue Alert*\n\nHello *${t.name || 'Patient'}*!\nYour ticket *${ticketNo}* has *2 people ahead of you*.\n\nPlease start heading towards the clinic!`;
+          sendTelegramMessage(t.telegramChatId, msg);
+          db.ref(`tickets/${t.id}/notified2Ahead`).set(true);
+        }
+      }
+
+      // 2. ALERT WHEN IT IS THEIR TURN
+      if (servingCreatedAt && t.createdAt === servingCreatedAt && !t.notifiedTurn) {
+        const msg = `🚨 *IT'S YOUR TURN!*\n\nHello *${t.name || 'Patient'}*!\nTicket *${ticketNo}*: Please proceed into the consultation room now.`;
+        sendTelegramMessage(t.telegramChatId, msg);
+        db.ref(`tickets/${t.id}/notifiedTurn`).set(true);
+      }
+    });
+  }
+
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
     const ticketsObj = data.tickets || {};
@@ -123,7 +166,6 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
     activeTickets = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
     historyTickets = Object.values(historyObj).sort((a, b) => a.createdAt - b.createdAt);
 
-    // Merge active and history list without duplicates
     const patientMap = {};
     historyTickets.forEach(t => patientMap[t.id] = { ...t, isArchived: true });
     activeTickets.forEach(t => patientMap[t.id] = { ...t, isArchived: false });
@@ -131,6 +173,7 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
     allPatients = Object.values(patientMap).sort((a, b) => a.createdAt - b.createdAt);
     servingCreatedAt = data.servingCreatedAt || null;
 
+    checkAndTriggerTelegramAlerts();
     renderStaff();
   });
 
@@ -169,13 +212,15 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
         stClass = "st-done"; stText = "Completed";
       }
 
+      const tgStatus = t.telegramChatId ? `<span style="color:var(--teal); font-weight:600;">Connected</span>` : `<span style="color:var(--ink-soft);">—</span>`;
+
       return `
         <tr>
           <td>${i + 1}</td>
           <td><strong>${ticketNo}</strong></td>
           <td>${timeStr}</td>
           <td>${t.name || 'Anonymous'}</td>
-          <td>${t.idNumber || '—'}</td>
+          <td>${tgStatus}</td>
           <td><span class="status-badge ${stClass}">${stText}</span></td>
         </tr>
       `;
@@ -192,7 +237,6 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
     db.ref('servingCreatedAt').set(nextTicket.createdAt);
   };
 
-  // CLEAR ACTIVE QUEUE ONLY (KEEPS TODAY'S LOG IN HISTORY)
   document.getElementById('clearQueueBtn').onclick = () => {
     if(activeTickets.length === 0){
       alert("Active queue is already empty.");
@@ -204,7 +248,6 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
         const currTickets = snap.val() || {};
         const updates = {};
         
-        // Move active tickets to history node
         Object.keys(currTickets).forEach(key => {
           updates['history/' + key] = currTickets[key];
         });
@@ -218,7 +261,6 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
     }
   };
 
-  // FULL RESET (WIPES EVERYTHING INCLUDING LOGS)
   document.getElementById('resetAllBtn').onclick = () => {
     if(confirm("Are you sure you want to delete ALL records and reset the entire system?")){
       db.ref().remove().then(() => {
