@@ -122,7 +122,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let servingCreatedAt = null;
   let myTicket = null;
   let pendingSubmissionId = null;
+  
+  // Track alert states to avoid repeating audio chimes constantly
   let hasAlertedForCurrentTurn = false;
+  let hasAlerted2Ahead = false;
+  
   let audioCtx = null;
   let tgPollTimer = null;
 
@@ -205,6 +209,18 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     }
   }
 
+  function notifyPatient2Ahead(ticketStr, patientName){
+    playTurnChime();
+    if ("Notification" in window && Notification.permission === "granted") {
+      try {
+        new Notification("🔔 Mini Clinic Queue Alert", {
+          body: `Ticket ${ticketStr} (${patientName}): 2 people ahead of you! Please prepare to head over.`,
+          tag: "clinic-2ahead-alert"
+        });
+      } catch(e){}
+    }
+  }
+
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
   function getTicketNumber(t){
@@ -238,6 +254,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     if(tgPollTimer) clearInterval(tgPollTimer);
     myTicket = null;
     hasAlertedForCurrentTurn = false;
+    hasAlerted2Ahead = false;
     try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
   }
 
@@ -305,6 +322,13 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         statusHtml = `<div class="status">Your turn has passed / completed</div>`;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
+
+        // Audio Chime & Push Notification Trigger when 2 people ahead
+        if (ahead === 2 && !hasAlerted2Ahead) {
+          notifyPatient2Ahead(ticketStr, patientName);
+          hasAlerted2Ahead = true;
+        }
+
         statusHtml = ahead === 0
           ? `<div class="status">You're next — please wait nearby</div>`
           : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
@@ -421,6 +445,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     pendingSubmissionId = ticketId;
     myTicket = newTicket;
     hasAlertedForCurrentTurn = false;
+    hasAlerted2Ahead = false;
     saveMyTicket();
     render();
 
