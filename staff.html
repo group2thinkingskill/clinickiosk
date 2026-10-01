@@ -139,7 +139,7 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
       const idx = allPatients.findIndex(p => p.id === t.id);
       const ticketNo = fmt(idx + 1);
 
-      // 1. ALERT WHEN 2 PEOPLE AHEAD
+      // ALERT WHEN 2 PEOPLE AHEAD
       if (servingCreatedAt && t.createdAt > servingCreatedAt) {
         const ahead = waiting.filter(w => w.createdAt < t.createdAt).length;
         if (ahead === 2 && !t.notified2Ahead) {
@@ -149,7 +149,7 @@ th{font-size:.75rem; text-transform:uppercase; color:var(--ink-soft); letter-spa
         }
       }
 
-      // 2. ALERT WHEN IT IS THEIR TURN
+      // ALERT WHEN IT IS THEIR TURN
       if (servingCreatedAt && t.createdAt === servingCreatedAt && !t.notifiedTurn) {
         const msg = `🚨 *IT'S YOUR TURN!*\n\nHello *${t.name || 'Patient'}*!\nTicket *${ticketNo}*: Please proceed into the consultation room now.`;
         sendTelegramMessage(t.telegramChatId, msg);
