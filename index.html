@@ -49,7 +49,7 @@ button.primary:disabled{opacity:0.6;cursor:not-allowed;}
 button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;padding:4px;}
 .tg-btn{display:inline-block;width:100%;padding:12px;margin-top:14px;background:#0088cc;color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:.9rem;}
 .tg-btn:hover{background:#0077b5;}
-.tg-status{margin-top:8px;font-size:.8rem;color:var(--teal);font-weight:600;}
+.tg-status{margin-top:12px;padding:8px;background:rgba(20,107,98,0.1);border-radius:8px;font-size:.85rem;color:var(--teal);font-weight:700;}
 .actions{text-align:center;margin-top:22px;}
 .field{text-align:left;margin-bottom:14px;}
 .fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
@@ -59,6 +59,9 @@ button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);f
 .empty{color:var(--ink-soft);font-size:.9rem;margin-top:18px;}
 footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;}
 .dev-tools{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line);display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
+.manual-tg{margin-top:10px;display:flex;gap:6px;}
+.manual-tg input{padding:8px;border-radius:6px;border:1px solid var(--line);font-size:.8rem;flex:1;}
+.manual-tg button{padding:8px 12px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -238,8 +241,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
   }
 
-  // LISTEN TO TELEGRAM BOT TO AUTO-DETECT CHAT ID
-  function startTelegramPolling(ticketId){
+  function startTelegramPolling(ticketId, ticketStr){
     if(tgPollTimer) clearInterval(tgPollTimer);
     tgPollTimer = setInterval(() => {
       fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/getUpdates`)
@@ -247,16 +249,25 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         .then(data => {
           if(data.ok && data.result){
             for(let u of data.result){
-              if(u.message && u.message.text && u.message.text.includes(ticketId)){
-                const chatId = u.message.chat.id;
-                db.ref('tickets/' + ticketId + '/telegramChatId').set(chatId);
-                clearInterval(tgPollTimer);
-                break;
+              if(u.message && u.message.text){
+                const text = u.message.text.toUpperCase();
+                if(text.includes(ticketId.toUpperCase()) || text.includes(ticketStr.toUpperCase()) || text.includes('/START')){
+                  const chatId = u.message.chat.id;
+                  db.ref('tickets/' + ticketId + '/telegramChatId').set(chatId);
+                  clearInterval(tgPollTimer);
+                  break;
+                }
               }
             }
           }
         }).catch(e => {});
-    }, 2500);
+    }, 2000);
+  }
+
+  function saveManualChatId(ticketId){
+    const val = document.getElementById('manualChatIdInput').value.trim();
+    if(!val) return;
+    db.ref('tickets/' + ticketId + '/telegramChatId').set(val);
   }
 
   function render(){
@@ -303,12 +314,16 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       if(mine.telegramChatId){
         tgHtml = `<div class="tg-status">✅ Telegram Alerts Active</div>`;
       } else {
-        const tgLink = `https://t.me/${TG_BOT_USERNAME}?start=${mine.id}`;
+        const tgLink = `https://t.me/${TG_BOT_USERNAME}?start=${ticketStr}`;
         tgHtml = `
           <a href="${tgLink}" target="_blank" class="tg-btn">📱 Enable Telegram Alerts</a>
-          <div style="font-size:.75rem; color:var(--ink-soft); margin-top:6px;">Tap above and click START in Telegram to get alerts when 2 people are ahead!</div>
+          <div style="font-size:.75rem; color:var(--ink-soft); margin-top:6px;">Tap above and hit START, or type "<strong>${ticketStr}</strong>" in the Telegram bot chat!</div>
+          <div class="manual-tg">
+            <input type="text" id="manualChatIdInput" placeholder="Or enter Telegram Chat ID">
+            <button onclick="saveManualChatId('${mine.id}')">Save</button>
+          </div>
         `;
-        startTelegramPolling(mine.id);
+        startTelegramPolling(mine.id, ticketStr);
       }
 
       card.innerHTML = `
