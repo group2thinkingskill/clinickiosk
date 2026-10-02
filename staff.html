@@ -1,269 +1,386 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini Clinic Queue System - Staff Control Panel</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini Clinic — Staff Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6FAF9; --paper-2:#EAF2F0; --ink:#0F2A2E; --ink-soft:#4B6560;
+  --teal:#146B62; --teal-deep:#0C4A44; --coral:#C94430; --line:#CFE0DC;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
+    --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
+  }
+}
+*{box-sizing:border-box;}
+body{margin:0; min-height:100vh; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,sans-serif;}
+.wrap{max-width:720px; margin:0 auto; padding:28px 20px 48px;}
+.brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;}
+.brand-title{display:flex; align-items:center; gap:10px;}
+.brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;}
+.brand .mark svg{width:18px;height:18px;}
+.brand h1{font-size:1.15rem;font-weight:700;margin:0;}
+.brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;}
+
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;}
+.label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:3rem;letter-spacing:.04em;line-height:1;color:var(--teal);}
+.patient-info{margin-top:10px;font-size:1rem;font-weight:600;}
+.patient-meta{color:var(--ink-soft);font-size:.85rem;font-weight:400;margin-top:2px;}
+
+.btn-group{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+button.primary{flex:1;min-width:140px;padding:12px 18px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:.95rem;cursor:pointer;}
+button.primary:hover{background:var(--teal-deep);}
+button.danger{padding:12px 18px;border:none;border-radius:10px;background:var(--coral);color:#fff;font:inherit;font-weight:600;font-size:.95rem;cursor:pointer;}
+button.ghost{background:none;border:1px solid var(--line);color:var(--ink-soft);font:inherit;font-size:.85rem;border-radius:8px;padding:8px 12px;cursor:pointer;}
+
+.search-container{margin-bottom:20px;}
+.search-input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);font:inherit;font-size:.95rem;}
+.search-input:focus{outline:2px solid var(--teal);outline-offset:1px;}
+
+.section-title{font-size:1rem;font-weight:700;color:var(--teal);margin:24px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.date-badge{font-size:.75rem;background:var(--teal);color:#fff;padding:2px 8px;border-radius:12px;font-weight:500;}
+
+.queue-list{list-style:none;padding:0;margin:0;}
+.queue-item{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.queue-item .t-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:1.1rem;color:var(--teal);}
+.queue-item .t-details{flex:1;}
+.queue-item .t-name{font-weight:600;font-size:.95rem;}
+.queue-item .t-id{font-size:.8rem;color:var(--ink-soft);}
+.queue-item .t-time{font-size:.75rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+.status-pill{font-size:.75rem;font-weight:600;padding:4px 8px;border-radius:6px;background:rgba(20,107,98,0.12);color:var(--teal);}
+.status-pill.done{background:rgba(75,101,96,0.15);color:var(--ink-soft);}
+
+.empty-msg{color:var(--ink-soft);font-size:.88rem;text-align:center;padding:16px 0;}
+footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;}
+</style>
 </head>
-<body class="bg-[#0b1715] text-slate-100 font-sans min-h-screen pb-12">
-
-  <!-- TOP NAVIGATION BAR -->
-  <header class="border-b border-emerald-900/40 bg-[#0e1d1a] px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-md">
-    <div class="flex items-center gap-3">
-      <span class="bg-emerald-500 text-slate-950 font-bold w-8 h-8 flex items-center justify-center rounded-lg text-xl shadow-sm">+</span>
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="font-bold text-emerald-400 text-base md:text-lg tracking-wide leading-tight">Mini Clinic Queue System</h1>
-          <span class="bg-emerald-900/60 text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-700/40">Staff Panel</span>
-        </div>
-      </div>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-title">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+      <div><h1>Staff Control Panel</h1><span class="sub">Mini Clinic — Doctor Console</span></div>
     </div>
+    <button class="ghost" id="resetBtn">Reset Active Queue</button>
+  </div>
 
-    <div>
-      <a href="index.html" target="_blank" class="bg-[#122320] border border-emerald-900/60 text-emerald-400 hover:bg-emerald-900/40 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
-        <span>🖥️</span> Open Patient Kiosk ↗
-      </a>
+  <!-- SEARCH BAR -->
+  <div class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search patient by Name or IC Number..." autocomplete="off">
+  </div>
+
+  <!-- CURRENTLY SERVING -->
+  <div class="card">
+    <div class="label">Currently Serving</div>
+    <div id="servingBox">
+      <div class="num" style="color:var(--ink-soft)">— — —</div>
+      <div class="patient-info" style="color:var(--ink-soft)">No patient called yet</div>
     </div>
-  </header>
-
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
-
-    <!-- PAGE TITLE & RESET HEADER -->
-    <div class="flex justify-between items-start md:items-center flex-col md:flex-row gap-4 pt-2">
-      <div class="flex items-center gap-3">
-        <span class="text-emerald-400 font-black text-2xl">+</span>
-        <div>
-          <h2 class="text-xl font-bold text-white tracking-wide">Staff Control Panel</h2>
-          <p class="text-xs text-gray-400">Mini Clinic — Doctor Console</p>
-        </div>
-      </div>
-
-      <button onclick="resetEverything()" class="bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-sm">
-        <span>⚠️</span> Reset Everything (Queue & Log)
-      </button>
+    <div class="btn-group">
+      <button class="primary" id="nextBtn">Call Next Patient ➔</button>
+      <button class="danger" id="completeBtn">Finish / Mark Done</button>
     </div>
+  </div>
 
-    <!-- SEARCH BAR -->
-    <div class="relative">
-      <span class="absolute left-4 top-3 text-gray-400 text-sm">🔍</span>
-      <input type="text" id="staff-search" oninput="renderUI()" placeholder="Search patient by Name or IC Number..." 
-        class="w-full bg-[#122320] border border-emerald-900/60 rounded-xl py-2.5 pl-11 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"/>
-    </div>
+  <!-- SEARCH RESULTS -->
+  <div id="searchSection" style="display:none;">
+    <div class="section-title">Search Results <span class="date-badge" id="searchCount">0 found</span></div>
+    <ul class="queue-list" id="searchResultsList"></ul>
+  </div>
 
-    <!-- CURRENTLY SERVING BOX -->
-    <div class="bg-[#122320] border border-emerald-900/60 rounded-2xl p-6 shadow-xl">
-      <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-4">CURRENTLY SERVING</p>
-      <div id="serving-card-content" class="text-center py-4">
-        <!-- Rendered via JS -->
-      </div>
-    </div>
+  <!-- WAITING PATIENTS -->
+  <div id="activeQueueSection">
+    <div class="section-title">Waiting Patients (<span id="waitingCount">0</span>)</div>
+    <ul class="queue-list" id="waitingList"></ul>
+  </div>
 
-    <!-- WAITING PATIENTS LIST -->
-    <div class="space-y-3">
-      <h3 id="waiting-patients-title" class="text-emerald-400 font-bold text-xs tracking-wide">
-        Waiting Patients (0)
-      </h3>
-      <div id="waiting-patients-list" class="space-y-2">
-        <!-- Rendered via JS -->
-      </div>
-    </div>
+  <!-- REAL-TIME LOGS BY DATE -->
+  <div id="logsContainer"></div>
 
-    <!-- TODAY'S PATIENT LOG -->
-    <div class="pt-4 space-y-3">
-      <div class="flex justify-between items-center">
-        <h3 id="log-title" class="text-emerald-400 font-bold text-xs tracking-wide">
-          Today's Patient Log
-        </h3>
-        <span id="served-count-badge" class="bg-emerald-950 text-emerald-400 text-xs px-3 py-1 rounded-full border border-emerald-800/50 font-medium">
-          0 served
-        </span>
-      </div>
-      <div id="patient-log-list" class="space-y-2">
-        <!-- Rendered via JS -->
-      </div>
-    </div>
+  <footer id="statusNote">Connected to live system</footer>
+</div>
 
-  </main>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <script>
-    let state = {
-      ticketCounter: parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10),
-      queue: JSON.parse(localStorage.getItem('mc_queue') || '[]'),
-      currentlyServing: JSON.parse(localStorage.getItem('mc_currentlyServing') || 'null'),
-      patientLog: JSON.parse(localStorage.getItem('mc_patientLog') || '[]'),
-      lastTicket: JSON.parse(localStorage.getItem('mc_lastTicket') || 'null')
-    };
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBZ9TFjNVtcvSkj_qJsEeDgRxbCqR-u84M",
+    authDomain: "clinickiosk-ffbc0.firebaseapp.com",
+    databaseURL: "https://clinickiosk-ffbc0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "clinickiosk-ffbc0",
+    storageBucket: "clinickiosk-ffbc0.firebasestorage.app",
+    messagingSenderId: "657601053327",
+    appId: "1:657601053327:web:9b9adf3bd4f1f3810826fa",
+    measurementId: "G-KCBXXT70PY"
+  };
 
-    function loadState() {
-      state.ticketCounter = parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10);
-      state.queue = JSON.parse(localStorage.getItem('mc_queue') || '[]');
-      state.currentlyServing = JSON.parse(localStorage.getItem('mc_currentlyServing') || 'null');
-      state.patientLog = JSON.parse(localStorage.getItem('mc_patientLog') || '[]');
-      state.lastTicket = JSON.parse(localStorage.getItem('mc_lastTicket') || 'null');
-      renderUI();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let ticketsList = [];
+  let historyList = [];
+  let servingCreatedAt = null;
+  let dataServingStartedAt = null;
+
+  const fmt = n => 'A' + String(n).padStart(3, '0');
+
+  function getTicketNum(ticket){
+    const idx = ticketsList.findIndex(x => x.id === ticket.id);
+    if(idx !== -1) return idx + 1;
+    return ticketsList.filter(x => x.createdAt < ticket.createdAt).length + 1;
+  }
+
+  function formatTime(ts){
+    if(!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatDateHeader(ts){
+    const d = new Date(ts);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    
+    const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return isToday ? `Today's Patient Log (${dateStr})` : `Patient Log — ${dateStr}`;
+  }
+
+  function getDateKey(ts){
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function render(){
+    const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+
+    // 1. SERVING CARD
+    const currentServingTicket = servingCreatedAt ? ticketsList.find(t => t.createdAt === servingCreatedAt) : null;
+    const servingBox = document.getElementById('servingBox');
+
+    if (currentServingTicket) {
+      servingBox.innerHTML = `
+        <div class="num">${fmt(getTicketNum(currentServingTicket))}</div>
+        <div class="patient-info">${currentServingTicket.name || 'Anonymous'}</div>
+        <div class="patient-meta">IC: ${currentServingTicket.idNumber || 'N/A'} • Called at ${formatTime(dataServingStartedAt || currentServingTicket.createdAt)}</div>
+      `;
+    } else {
+      servingBox.innerHTML = `
+        <div class="num" style="color:var(--ink-soft)">— — —</div>
+        <div class="patient-info" style="color:var(--ink-soft)">No patient currently called</div>
+      `;
     }
 
-    function saveState() {
-      localStorage.setItem('mc_ticketCounter', state.ticketCounter.toString());
-      localStorage.setItem('mc_queue', JSON.stringify(state.queue));
-      localStorage.setItem('mc_currentlyServing', JSON.stringify(state.currentlyServing));
-      localStorage.setItem('mc_patientLog', JSON.stringify(state.patientLog));
-      localStorage.setItem('mc_lastTicket', JSON.stringify(state.lastTicket));
-      renderUI();
+    // 2. SEARCH MODE vs REGULAR MODE
+    const searchSection = document.getElementById('searchSection');
+    const activeQueueSection = document.getElementById('activeQueueSection');
+    const logsContainer = document.getElementById('logsContainer');
+
+    if (searchQuery) {
+      searchSection.style.display = 'block';
+      activeQueueSection.style.display = 'none';
+      logsContainer.style.display = 'none';
+
+      const allRecords = [
+        ...ticketsList.map(t => ({...t, isHistory: false})),
+        ...historyList.map(h => ({...h, isHistory: true}))
+      ];
+
+      const filtered = allRecords.filter(item => {
+        const nameMatch = (item.name || '').toLowerCase().includes(searchQuery);
+        const idMatch = (item.idNumber || '').toLowerCase().includes(searchQuery);
+        return nameMatch || idMatch;
+      });
+
+      document.getElementById('searchCount').textContent = `${filtered.length} found`;
+      const searchResultsList = document.getElementById('searchResultsList');
+
+      if (filtered.length === 0) {
+        searchResultsList.innerHTML = `<div class="empty-msg">No patients matching "${searchQuery}"</div>`;
+      } else {
+        searchResultsList.innerHTML = filtered.map(t => `
+          <li class="queue-item">
+            <div class="t-num">${fmt(getTicketNum(t))}</div>
+            <div class="t-details">
+              <div class="t-name">${t.name}</div>
+              <div class="t-id">IC: ${t.idNumber}</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="status-pill ${t.isHistory ? 'done' : ''}">${t.isHistory ? 'Completed' : 'In Queue'}</span>
+              <div class="t-time">${formatTime(t.completedAt || t.createdAt)}</div>
+            </div>
+          </li>
+        `).join('');
+      }
+      return;
     }
 
-    // Real-time synchronization when patient registers on index.html
-    window.addEventListener('storage', loadState);
+    // REGULAR VIEW
+    searchSection.style.display = 'none';
+    activeQueueSection.style.display = 'block';
+    logsContainer.style.display = 'block';
 
-    function announceTicket(ticketNo) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(`Number ${ticketNo}, please proceed to Consultation Room 1`);
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
+    // 3. WAITING PATIENTS LIST
+    const waitingTickets = servingCreatedAt 
+      ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
+      : ticketsList;
+
+    document.getElementById('waitingCount').textContent = waitingTickets.length;
+    const waitingList = document.getElementById('waitingList');
+
+    if (waitingTickets.length === 0) {
+      waitingList.innerHTML = `<div class="empty-msg">No patients currently waiting</div>`;
+    } else {
+      waitingList.innerHTML = waitingTickets.map(t => `
+        <li class="queue-item">
+          <div class="t-num">${fmt(getTicketNum(t))}</div>
+          <div class="t-details">
+            <div class="t-name">${t.name}</div>
+            <div class="t-id">IC: ${t.idNumber}</div>
+          </div>
+          <div class="t-time">${formatTime(t.createdAt)}</div>
+        </li>
+      `).join('');
+    }
+
+    // 4. REAL-TIME DYNAMIC DATE LOGS
+    logsContainer.innerHTML = '';
+
+    if (historyList.length === 0) {
+      logsContainer.innerHTML = `
+        <div class="section-title">Today's Patient Log</div>
+        <div class="empty-msg">No completed patients recorded yet</div>
+      `;
+    } else {
+      // Group completed history by date
+      const grouped = {};
+      historyList.forEach(item => {
+        const ts = item.completedAt || item.createdAt;
+        const dateKey = getDateKey(ts);
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = {
+            timestamp: ts,
+            items: []
+          };
+        }
+        grouped[dateKey].items.push(item);
+      });
+
+      const sortedDates = Object.keys(grouped).sort().reverse();
+
+      sortedDates.forEach(dateKey => {
+        const group = grouped[dateKey];
+        const sectionHtml = document.createElement('div');
+        sectionHtml.innerHTML = `
+          <div class="section-title">
+            ${formatDateHeader(group.timestamp)}
+            <span class="date-badge">${group.items.length} served</span>
+          </div>
+          <ul class="queue-list">
+            ${group.items.map(t => `
+              <li class="queue-item">
+                <div class="t-num" style="color:var(--ink-soft);">${fmt(getTicketNum(t))}</div>
+                <div class="t-details">
+                  <div class="t-name">${t.name}</div>
+                  <div class="t-id">IC: ${t.idNumber}</div>
+                </div>
+                <div style="text-align:right;">
+                  <span class="status-pill done">Completed</span>
+                  <div class="t-time">${formatTime(t.completedAt || t.createdAt)}</div>
+                </div>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+        logsContainer.appendChild(sectionHtml);
+      });
+    }
+  }
+
+  db.ref().on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    const ticketsObj = data.tickets || {};
+    const historyObj = data.history || {};
+
+    ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+    historyList = Object.values(historyObj).sort((a, b) => (b.completedAt || b.createdAt) - (a.completedAt || a.createdAt));
+    servingCreatedAt = data.servingCreatedAt || null;
+    dataServingStartedAt = data.servingStartedAt || null;
+
+    render();
+  });
+
+  document.getElementById('searchInput').addEventListener('input', render);
+
+  // CALL NEXT PATIENT (Automatically completes current patient if currently serving)
+  document.getElementById('nextBtn').onclick = () => {
+    const waiting = servingCreatedAt 
+      ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
+      : ticketsList;
+
+    if (waiting.length === 0) {
+      alert("No patients waiting in queue!");
+      return;
+    }
+
+    const now = Date.now();
+
+    // 1. If someone is currently being served, mark them completed and move to history
+    if (servingCreatedAt) {
+      const currentTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
+      if (currentTicket) {
+        const completedTicket = { ...currentTicket, completedAt: now };
+        db.ref('history/' + currentTicket.id).set(completedTicket);
+        db.ref('tickets/' + currentTicket.id).remove();
       }
     }
 
-    function callNextPatient() {
-      if (state.queue.length === 0) return;
+    // 2. Call the next patient
+    const nextPatient = waiting[0];
+    db.ref().update({
+      servingCreatedAt: nextPatient.createdAt,
+      servingStartedAt: now
+    });
+  };
 
-      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const next = state.queue.shift();
-      next.calledAt = timeString;
-
-      state.currentlyServing = next;
-      saveState();
-      announceTicket(next.ticketNo);
+  // FINISH / MARK DONE BUTTON
+  document.getElementById('completeBtn').onclick = () => {
+    if (!servingCreatedAt) {
+      alert("No patient currently being served.");
+      return;
     }
 
-    function finishServing() {
-      if (!state.currentlyServing) return;
-
-      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const completedRecord = {
-        ...state.currentlyServing,
-        completedAt: timeString
+    const currentTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
+    if (currentTicket) {
+      const completedTicket = {
+        ...currentTicket,
+        completedAt: Date.now()
       };
 
-      state.patientLog.unshift(completedRecord);
-      state.currentlyServing = null;
-      saveState();
+      // Save to history log, remove from active tickets, and clear serving state
+      db.ref('history/' + currentTicket.id).set(completedTicket);
+      db.ref('tickets/' + currentTicket.id).remove();
+      db.ref('servingCreatedAt').remove();
+      db.ref('servingStartedAt').remove();
     }
+  };
 
-    function resetEverything() {
-      if (confirm('Are you sure you want to RESET EVERYTHING?\n\nThis will clear:\n• All waiting tickets\n• Active serving patient\n• Today\'s patient log\n• Reset ticket counter to A001')) {
-        state.queue = [];
-        state.currentlyServing = null;
-        state.patientLog = [];
-        state.ticketCounter = 1;
-        state.lastTicket = null;
-
-        localStorage.clear();
-        saveState();
-      }
+  // RESET ALL QUEUE BUTTON
+  document.getElementById('resetBtn').onclick = () => {
+    if (confirm("Are you sure you want to reset active queue? Completed patient history logs will remain safe.")) {
+      db.ref('tickets').remove();
+      db.ref('servingCreatedAt').remove();
+      db.ref('servingStartedAt').remove();
     }
-
-    function renderUI() {
-      const servingContainer = document.getElementById('serving-card-content');
-      
-      if (state.currentlyServing) {
-        servingContainer.innerHTML = `
-          <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-left">
-            <div>
-              <div class="text-6xl font-black text-emerald-400 tracking-tight my-1">${state.currentlyServing.ticketNo}</div>
-              <div class="text-lg font-bold text-white">${state.currentlyServing.name}</div>
-              <p class="text-xs text-gray-400 mt-0.5">IC: ${state.currentlyServing.icNumber} • Service: ${state.currentlyServing.category || 'General'}</p>
-              <p class="text-[11px] text-emerald-400/80 mt-1 font-medium">Called at ${state.currentlyServing.calledAt}</p>
-            </div>
-            <div class="flex flex-wrap gap-2 w-full md:w-auto mt-2 md:mt-0">
-              <button onclick="announceTicket('${state.currentlyServing.ticketNo}')" class="bg-[#0b1715] hover:bg-emerald-900/40 border border-emerald-800 text-emerald-400 font-bold py-2.5 px-4 rounded-xl text-xs transition">
-                🔊 Re-Announce
-              </button>
-              <button onclick="callNextPatient()" ${state.queue.length === 0 ? 'disabled' : ''} 
-                class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 text-slate-950 font-bold py-2.5 px-5 rounded-xl transition text-xs shadow-lg">
-                Call Next Patient →
-              </button>
-              <button onclick="finishServing()" class="bg-rose-500 hover:bg-rose-400 text-white font-bold py-2.5 px-5 rounded-xl transition text-xs shadow-lg">
-                Mark Finished
-              </button>
-            </div>
-          </div>
-        `;
-      } else {
-        servingContainer.innerHTML = `
-          <p class="text-gray-400 text-xs mb-4">No patient currently in consultation.</p>
-          <button onclick="callNextPatient()" ${state.queue.length === 0 ? 'disabled' : ''} 
-            class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 text-slate-950 font-bold py-3 px-6 rounded-xl transition text-xs shadow-lg">
-            Call Next Patient (${state.queue.length} Waiting)
-          </button>
-        `;
-      }
-
-      const query = document.getElementById('staff-search').value.toLowerCase().trim();
-
-      // Waiting List Filter
-      const filteredQueue = state.queue.filter(p => 
-        p.name.toLowerCase().includes(query) || p.icNumber.includes(query) || p.ticketNo.toLowerCase().includes(query)
-      );
-
-      document.getElementById('waiting-patients-title').innerText = `Waiting Patients (${filteredQueue.length})`;
-
-      const waitingContainer = document.getElementById('waiting-patients-list');
-      if (filteredQueue.length === 0) {
-        waitingContainer.innerHTML = `<p class="text-center text-gray-500 text-xs py-4">No waiting patients found</p>`;
-      } else {
-        waitingContainer.innerHTML = filteredQueue.map((p, index) => `
-          <div class="bg-[#122320] border border-emerald-900/50 p-4 rounded-xl flex justify-between items-center">
-            <div class="flex items-center gap-4">
-              <span class="font-black text-emerald-400 text-lg">${p.ticketNo}</span>
-              <div>
-                <p class="text-xs font-bold text-white">${p.name}</p>
-                <p class="text-[10px] text-gray-400">IC: ${p.icNumber}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] text-gray-400 block">Reg: ${p.registeredAt}</span>
-              <span class="text-[10px] text-emerald-400 font-medium">#${index + 1} in line</span>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Log Filter
-      const filteredLog = state.patientLog.filter(p => 
-        p.name.toLowerCase().includes(query) || p.icNumber.includes(query) || p.ticketNo.toLowerCase().includes(query)
-      );
-
-      const dateStr = new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' });
-      document.getElementById('log-title').innerText = `Today's Patient Log (${dateStr})`;
-      document.getElementById('served-count-badge').innerText = `${state.patientLog.length} served`;
-
-      const logContainer = document.getElementById('patient-log-list');
-      if (filteredLog.length === 0) {
-        logContainer.innerHTML = `<p class="text-center text-gray-500 text-xs py-6">No completed sessions logged</p>`;
-      } else {
-        logContainer.innerHTML = filteredLog.map(p => `
-          <div class="bg-[#122320]/60 border border-emerald-900/30 p-3.5 rounded-xl flex justify-between items-center">
-            <div class="flex items-center gap-4">
-              <span class="font-bold text-gray-400 text-sm">${p.ticketNo}</span>
-              <div>
-                <p class="text-xs font-bold text-gray-200">${p.name}</p>
-                <p class="text-[10px] text-gray-500">IC: ${p.icNumber}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] bg-emerald-900/40 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40">Completed</span>
-              <p class="text-[10px] text-gray-400 mt-1">${p.completedAt}</p>
-            </div>
-          </div>
-        `).join('');
-      }
-    }
-
-    loadState();
-  </script>
+  };
+</script>
 </body>
 </html>
