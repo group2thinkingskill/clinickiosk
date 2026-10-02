@@ -34,8 +34,6 @@ body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-
 .seam::before{left:-11px;} .seam::after{right:-11px;}
 .status{font-size:.95rem;color:var(--ink-soft);margin-top:4px;}
 .status.now{color:var(--coral);font-weight:700;}
-.est-box{margin-top:16px;padding:12px;background:rgba(20,107,98,0.08);border-radius:10px;border:1px solid var(--line);font-size:.9widgets;font-weight:600;color:var(--teal-deep);}
-.est-box span{font-family:'IBM Plex Mono',monospace;font-size:1.05rem;font-weight:700;color:var(--teal);}
 button.primary{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
 button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;}
 .field{text-align:left;margin-bottom:14px;}
@@ -95,6 +93,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let servingCreatedAt = null;
   let myTicket = null;
   let audioCtx = null;
+  let lastPlayedTurnKey = null;
 
   function initAudio(){
     try {
@@ -106,21 +105,36 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
-  function playAlertChime(){
+  // VERY LOUD DUAL-TONE ALARM FOR THE PATIENT WHEN THEIR TURN ARRIVES
+  function playTurnAlarm(){
     try {
       initAudio();
       if(!audioCtx) return;
       const now = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(659.25, now);
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.3);
+
+      // First beep high tone
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(880, now); // A5 note
+      gain1.gain.setValueAtTime(1.0, now); // MAX VOLUME
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // Second beep higher tone immediately following
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(1174.66, now + 0.4); // D6 note
+      gain2.gain.setValueAtTime(1.0, now + 0.4); // MAX VOLUME
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.4);
+      osc2.stop(now + 0.8);
     } catch(e){}
   }
 
@@ -147,6 +161,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   function clearMyTicket(){
     myTicket = null;
+    lastPlayedTurnKey = null;
     try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
   }
 
@@ -172,7 +187,14 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
       if(servingCreatedAt && mine.createdAt === servingCreatedAt){
         statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
-        playAlertChime();
+        
+        // Trigger the LOUD alarm for the patient
+        const turnKey = mine.id + '_' + servingCreatedAt;
+        if (lastPlayedTurnKey !== turnKey) {
+          lastPlayedTurnKey = turnKey;
+          playTurnAlarm();
+        }
+
       } else if (servingCreatedAt && mine.createdAt < servingCreatedAt) {
         statusHtml = `<div class="status">Your turn has passed / completed</div>`;
       } else {
@@ -226,7 +248,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     takeBtn.disabled = true;
     const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
 
-    // Uses persistent global sequence counter so it never resets to A001 mid-day when queue is cleared
     db.ref().transaction((currentData) => {
       currentData = currentData || {};
       currentData.lastSequence = (currentData.lastSequence || 0) + 1;
