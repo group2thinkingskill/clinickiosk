@@ -21,13 +21,10 @@
 }
 body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,sans-serif;}
 .wrap{max-width:520px; margin:0 auto; padding:28px 20px 48px;}
-.brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
-.brand-left{display:flex; align-items:center; gap:10px;}
+.brand{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;}
 .brand h1{font-size:1.15rem;font-weight:700;margin:0;}
 .brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;}
-.demo-badge{background:rgba(20,107,98,0.1);border:1px solid var(--teal);color:var(--teal);padding:6px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;}
-.demo-badge:active{background:rgba(20,107,98,0.25);}
 .greeting{font-size:1.1rem;font-weight:600;color:var(--teal);margin-bottom:12px;text-align:center;}
 .card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center;}
 .label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
@@ -39,6 +36,8 @@ body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-
 .status.now{color:var(--coral);font-weight:700;}
 button.primary{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
 button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;}
+button.add-person{margin-top:14px;width:100%;padding:10px;border:1px dashed var(--teal);border-radius:10px;background:rgba(20,107,98,0.05);color:var(--teal);font:inherit;font-weight:600;font-size:0.85rem;cursor:pointer;}
+button.add-person:active{background:rgba(20,107,98,0.15);}
 .field{text-align:left;margin-bottom:14px;}
 .fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
 .idInput{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.95rem;}
@@ -50,11 +49,8 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 <body>
 <div class="wrap">
   <div class="brand">
-    <div class="brand-left">
-      <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
-      <div><h1>Queue System</h1><span class="sub">Mini Clinic — Patient Kiosk</span></div>
-    </div>
-    <button class="demo-badge" id="topSimulateBtn">⚡ Simulate Alert</button>
+    <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+    <div><h1>Queue System</h1><span class="sub">Mini Clinic — Patient Kiosk</span></div>
   </div>
 
   <div id="greetingHeader" class="greeting"></div>
@@ -74,6 +70,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       <button class="primary" id="takeBtn">Take a queue number</button>
     </div>
     <div class="empty" id="patientQueueInfo">Loading queue status…</div>
+    <button class="add-person" id="addPersonBtn">+ Add Test Person (Demo Simulation)</button>
   </div>
   <footer id="modeNote">Connecting to live cloud…</footer>
 </div>
@@ -100,7 +97,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let myTicket = null;
   let audioCtx = null;
   let lastPlayedTurnKey = null;
-  let isSimulatedTurn = false;
 
   function initAudio(){
     try {
@@ -112,7 +108,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
-  // VERY LOUD DUAL-TONE ALARM FOR THE PATIENT
   function playTurnAlarm(){
     try {
       initAudio();
@@ -166,7 +161,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   function clearMyTicket(){
     myTicket = null;
-    isSimulatedTurn = false;
     lastPlayedTurnKey = null;
     try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
   }
@@ -190,12 +184,12 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } else {
       const ticketStr = mine.ticketNumber || fmt(mine.ticketSeq);
       let statusHtml;
-      let isMyTurn = (servingCreatedAt && mine.createdAt === servingCreatedAt) || isSimulatedTurn;
+      let isMyTurn = (servingCreatedAt && mine.createdAt === servingCreatedAt);
 
       if(isMyTurn){
         statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
         
-        const turnKey = mine.id + '_' + (servingCreatedAt || 'simulated');
+        const turnKey = mine.id + '_' + servingCreatedAt;
         if (lastPlayedTurnKey !== turnKey) {
           lastPlayedTurnKey = turnKey;
           playTurnAlarm();
@@ -224,17 +218,29 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     }
   }
 
-  // Global simulation button trigger
-  document.getElementById('topSimulateBtn').onclick = () => {
-    initAudio();
-    isSimulatedTurn = true;
-    playTurnAlarm();
-    
-    // If no ticket exists yet when clicked, automatically assign a dummy ticket so the card lights up nicely!
-    if(!myTicket){
-      myTicket = { id: 'sim_123', ticketNumber: 'A001', createdAt: Date.now() };
-    }
-    render();
+  // "+ Add Test Person" button functionality for demo
+  document.getElementById('addPersonBtn').onclick = () => {
+    const demoNames = ["Siti Aminah", "Ahmad Zaki", "Ravi Kumar", "Chong Wei", "Nurul Ain", "Lim Mei Ling"];
+    const randomName = demoNames[Math.floor(Math.random() * demoNames.length)];
+    const randomIc = '05' + Math.floor(1000000000 + Math.random() * 9000000000);
+    const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+    db.ref().transaction((currentData) => {
+      currentData = currentData || {};
+      currentData.lastSequence = (currentData.lastSequence || 0) + 1;
+      const seqNumber = currentData.lastSequence;
+
+      currentData.tickets = currentData.tickets || {};
+      currentData.tickets[ticketId] = {
+        id: ticketId,
+        ticketNumber: fmt(seqNumber),
+        ticketSeq: seqNumber,
+        name: randomName,
+        idNumber: randomIc,
+        createdAt: Date.now()
+      };
+      return currentData;
+    });
   };
 
   db.ref().on('value', (snapshot) => {
@@ -292,7 +298,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       const savedTicket = data.tickets ? data.tickets[ticketId] : null;
       if (savedTicket) {
         myTicket = savedTicket;
-        isSimulatedTurn = false;
         saveMyTicket();
         nameInput.value = '';
         idInput.value = '';
