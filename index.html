@@ -1,453 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mini Clinic — Patient Kiosk</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --paper:#F6FAF9; --paper-2:#EAF2F0; --ink:#0F2A2E; --ink-soft:#4B6560;
-  --teal:#146B62; --teal-deep:#0C4A44; --coral:#C94430; --line:#CFE0DC;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
-    --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
-  --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
-}
-html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
-*{box-sizing:border-box;}
-body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;}
-.wrap{max-width:520px; margin:0 auto; padding:28px 20px 48px;}
-.brand{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
-.brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;}
-.brand .mark svg{width:18px;height:18px;}
-.brand h1{font-size:1.15rem;font-weight:700;margin:0;letter-spacing:-0.01em;}
-.brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;margin-top:1px;}
-.greeting{font-size:1.1rem;font-weight:600;color:var(--teal);margin-bottom:12px;text-align:center;}
-.card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center;}
-.label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
-.num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:3.4rem;letter-spacing:.04em;line-height:1;}
-.seam{border-top:2px dashed var(--line);margin:20px -26px;position:relative;}
-.seam::before,.seam::after{content:"";position:absolute;top:-11px;width:22px;height:22px;border-radius:50%;background:var(--paper);}
-.seam::before{left:-11px;} .seam::after{right:-11px;}
-.status{font-size:.95rem;color:var(--ink-soft);margin-top:4px;}
-.status.now{color:var(--coral);font-weight:700;animation:pulse 1.1s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
-.est-box{margin-top:16px;padding:12px;background:rgba(20,107,98,0.08);border-radius:10px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:.9rem;font-weight:600;color:var(--teal-deep);}
-.est-box span{font-family:'IBM Plex Mono',monospace;font-size:1.05rem;font-weight:700;color:var(--teal);}
-button.primary{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
-button.primary:active{background:var(--teal-deep);}
-button.primary:disabled{opacity:0.6;cursor:not-allowed;}
-button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;padding:4px;}
-.actions{text-align:center;margin-top:22px;}
-.field{text-align:left;margin-bottom:14px;}
-.fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
-.idInput{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.95rem;}
-.idInput:focus{outline:2px solid var(--teal);outline-offset:1px;}
-.fieldErr{color:var(--coral);font-size:.8rem;margin-top:6px;min-height:1em;font-weight:500;}
-.empty{color:var(--ink-soft);font-size:.9rem;margin-top:18px;}
-footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;}
-.dev-tools{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line);display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Clinic Queue System</title>
+  <!-- Tailwind CSS CDN for exact dark-emerald styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div class="wrap">
-  <div class="brand">
-    <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
-    <div><h1>Queue System</h1><span class="sub">Mini Clinic — Patient Kiosk</span></div>
-  </div>
+<body class="bg-[#0b1715] text-slate-100 font-sans min-h-screen">
 
-  <div id="greetingHeader" class="greeting"></div>
-
-  <div class="card" id="patientCard"></div>
-  <div class="actions">
-    <div id="takeSection">
-      <div class="field">
-        <label for="nameInput" class="fieldLabel">Full Name (Letters Only)</label>
-        <input type="text" id="nameInput" class="idInput" placeholder="e.g. Ahmad Sattiya" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="idInput" class="fieldLabel">Malaysian IC Number (12 Digits Only)</label>
-        <input type="text" id="idInput" class="idInput" placeholder="e.g. 020512085432" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off">
-        <div class="fieldErr" id="formErr"></div>
-      </div>
-      <button class="primary" id="takeBtn">Take a queue number</button>
+  <!-- TOP BAR & VIEW SWITCHER -->
+  <header class="border-b border-emerald-900/40 bg-[#0e1d1a] px-6 py-3 flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center gap-2">
+      <span class="bg-emerald-500 text-slate-950 font-bold w-7 h-7 flex items-center justify-center rounded-lg text-lg">+</span>
+      <span class="font-bold text-emerald-400 text-base md:text-lg tracking-wide">Mini Clinic Queue System</span>
     </div>
-
-    <div class="dev-tools">
-      <button class="ghost" id="simBtn">+ simulate arrival</button>
+    <div class="flex bg-[#122320] p-1 rounded-lg border border-emerald-900/50">
+      <button id="btn-tab-staff" onclick="switchTab('staff')" class="px-4 py-1.5 rounded-md text-xs font-semibold bg-emerald-500 text-slate-950 transition">
+        Staff Panel
+      </button>
+      <button id="btn-tab-patient" onclick="switchTab('patient')" class="px-4 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition">
+        Patient Kiosk
+      </button>
     </div>
+  </header>
 
-    <div class="empty" id="patientQueueInfo">Loading queue status…</div>
-  </div>
-  <footer id="modeNote">Connecting to live cloud…</footer>
-</div>
+  <main class="max-w-4xl mx-auto p-4 md:p-6">
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- ======================================================== -->
+    <!-- VIEW 1: STAFF CONTROL PANEL                              -->
+    <!-- ======================================================== -->
+    <section id="view-staff" class="space-y-6">
+      
+      <!-- Panel Header -->
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-xl font-bold flex items-center gap-2 text-white">
+            <span class="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-lg text-sm">✚</span>
+            Staff Control Panel
+          </h1>
+          <p class="text-xs text-gray-400">Mini Clinic — Doctor Console</p>
+        </div>
+        <button onclick="resetSystem()" class="text-xs text-gray-300 hover:text-white bg-[#122320] border border-emerald-900/60 px-3.5 py-2 rounded-lg hover:bg-rose-900/40 hover:border-rose-700 transition">
+          Reset Active Queue
+        </button>
+      </div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBZ9TFjNVtcvSkj_qJsEeDgRxbCqR-u84M",
-    authDomain: "clinickiosk-ffbc0.firebaseapp.com",
-    databaseURL: "https://clinickiosk-ffbc0-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "clinickiosk-ffbc0",
-    storageBucket: "clinickiosk-ffbc0.firebasestorage.app",
-    messagingSenderId: "657601053327",
-    appId: "1:657601053327:web:9b9adf3bd4f1f3810826fa",
-    measurementId: "G-KCBXXT70PY"
-  };
+      <!-- Search Bar -->
+      <div class="relative">
+        <span class="absolute left-3.5 top-2.5 text-gray-400 text-sm">🔍</span>
+        <input type="text" id="staff-search" oninput="renderUI()" placeholder="Search patient by Name or IC Number..." 
+          class="w-full bg-[#122320]/80 border border-emerald-900/50 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"/>
+      </div>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+      <!-- Currently Serving Container -->
+      <div class="bg-[#122320] border border-emerald-800/40 rounded-xl p-6 shadow-xl">
+        <p class="text-[11px] font-bold tracking-wider text-emerald-400/80 uppercase mb-2">CURRENTLY SERVING</p>
+        <div id="serving-card-content">
+          <!-- Dynamic Serving Content Rendered via JS -->
+        </div>
+      </div>
 
-  let ticketsList = [];
-  let servingCreatedAt = null;
-  let servingStartedAt = null;
-  let myTicket = null;
-  let pendingSubmissionId = null;
-  
-  let hasAlertedForCurrentTurn = false;
-  let lastAheadCount = null;
-  
-  let audioCtx = null;
+      <!-- Waiting Patients Section (FIXED FLEXBOX BUG) -->
+      <div>
+        <div class="border-b border-emerald-900/40 pb-2 mb-3">
+          <h2 id="waiting-patients-title" class="text-emerald-400 font-semibold text-xs tracking-wide">
+            Waiting Patients (0)
+          </h2>
+        </div>
+        <div id="waiting-patients-list" class="space-y-2">
+          <!-- Dynamic Waiting Queue Rendered via JS -->
+        </div>
+      </div>
 
-  function getTimeGreeting(){
-    const hr = new Date().getHours();
-    if(hr < 12) return "Good morning";
-    if(hr < 18) return "Good afternoon";
-    return "Good evening";
-  }
+      <!-- Today's Patient Log Section -->
+      <div>
+        <div class="flex justify-between items-center border-b border-emerald-900/40 pb-2 mb-3">
+          <h2 id="log-title" class="text-emerald-400 font-semibold text-xs tracking-wide">
+            Today's Patient Log
+          </h2>
+          <span id="served-count-badge" class="bg-emerald-900/40 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full border border-emerald-700/30">
+            0 served
+          </span>
+        </div>
+        <div id="patient-log-list" class="space-y-2">
+          <!-- Dynamic Log Rendered via JS -->
+        </div>
+      </div>
 
-  function initAudio(){
-    try {
-      if(!audioCtx){
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) audioCtx = new AudioCtx();
-      }
-      if(audioCtx && audioCtx.state === 'suspended'){
-        audioCtx.resume();
-      }
-    } catch(e) {}
-  }
+    </section>
 
-  function playAlertChime(){
-    try {
-      initAudio();
-      if(!audioCtx) return;
-      const now = audioCtx.currentTime;
+    <!-- ======================================================== -->
+    <!-- VIEW 2: PATIENT KIOSK PORTAL                             -->
+    <!-- ======================================================== -->
+    <section id="view-patient" class="hidden grid md:grid-cols-2 gap-6">
+      
+      <!-- Patient Registration Form -->
+      <div class="bg-[#122320] border border-emerald-900/50 rounded-xl p-6 shadow-lg h-fit">
+        <h2 class="text-lg font-bold text-emerald-400 mb-1">Get Queue Ticket</h2>
+        <p class="text-xs text-gray-400 mb-5">Please register your details below to obtain a queue ticket.</p>
 
-      const osc1 = audioCtx.createOscillator();
-      const gain1 = audioCtx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(523.25, now);
-      gain1.gain.setValueAtTime(0.8, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      osc1.connect(gain1);
-      gain1.connect(audioCtx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.3);
+        <form id="patient-form" onsubmit="handleRegister(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-300 mb-1">Full Name</label>
+            <input type="text" id="patient-name" required placeholder="e.g. Shaarvesh / Sattiya" 
+              class="w-full bg-[#0b1715] border border-emerald-900/60 rounded-lg p-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500" />
+          </div>
 
-      const osc2 = audioCtx.createOscillator();
-      const gain2 = audioCtx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(659.25, now + 0.15);
-      gain2.gain.setValueAtTime(0.8, now + 0.15);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      osc2.connect(gain2);
-      gain2.connect(audioCtx.destination);
-      osc2.start(now + 0.15);
-      osc2.stop(now + 0.5);
-    } catch(e){}
-  }
+          <div>
+            <label class="block text-xs font-medium text-gray-300 mb-1">IC Number (MyKad / Passport)</label>
+            <input type="text" id="patient-ic" required placeholder="e.g. 080603050342" 
+              class="w-full bg-[#0b1715] border border-emerald-900/60 rounded-lg p-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500" />
+          </div>
 
-  function playTurnChime(){
-    try {
-      initAudio();
-      if(!audioCtx) return;
-      const now = audioCtx.currentTime;
+          <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 px-4 rounded-lg text-xs transition mt-2">
+            Take Ticket Number
+          </button>
+        </form>
+      </div>
 
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-      notes.forEach((freq, i) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + (i * 0.12));
-        gain.gain.setValueAtTime(1.0, now + (i * 0.12));
-        gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.12) + 0.6);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now + (i * 0.12));
-        osc.stop(now + (i * 0.12) + 0.6);
-      });
-    } catch(e){}
-  }
+      <!-- Live Display & Issued Receipt -->
+      <div class="space-y-4">
+        <!-- Live Call Display -->
+        <div class="bg-[#122320] border border-emerald-900/50 rounded-xl p-5 text-center">
+          <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Now Serving at Room 1</p>
+          <div id="live-display-number" class="text-5xl font-black text-emerald-400 my-2">---</div>
+          <p id="live-display-name" class="text-xs text-gray-400">Waiting for next patient...</p>
+        </div>
 
-  const fmt = n => 'A' + String(n).padStart(3, '0');
+        <!-- Issued Active Ticket -->
+        <div id="my-ticket-card" class="bg-[#122320]/80 border-2 border-emerald-500/60 rounded-xl p-5 text-center space-y-3">
+          <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+            Your Active Ticket
+          </span>
+          <div>
+            <div id="ticket-card-number" class="text-5xl font-black text-white my-1">---</div>
+            <p id="ticket-card-name" class="text-xs font-semibold text-emerald-300">No ticket issued</p>
+            <p id="ticket-card-ic" class="text-[10px] text-gray-400">Please register on the left form</p>
+          </div>
 
-  function getTicketNumber(t){
-    if(!t) return 1;
-    const idx = ticketsList.findIndex(x => x.id === t.id);
-    if(idx !== -1) return idx + 1;
-    const countBefore = ticketsList.filter(x => x.createdAt < t.createdAt).length;
-    return countBefore + 1;
-  }
+          <div class="pt-2 border-t border-emerald-900/40 flex justify-around text-xs">
+            <div>
+              <p class="text-gray-400 text-[10px]">Registered At</p>
+              <p id="ticket-card-time" class="font-semibold text-emerald-400">--:--</p>
+            </div>
+            <div>
+              <p class="text-gray-400 text-[10px]">Position in Line</p>
+              <p id="ticket-card-pos" class="font-semibold text-emerald-400">--</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-  function getWaitingTickets(){
-    if(!servingCreatedAt) return ticketsList;
-    return ticketsList.filter(t => t.createdAt > servingCreatedAt);
-  }
+    </section>
+  </main>
 
-  // DYNAMIC INCREMENTING WAIT TIME LOGIC
-  function calculateEstWaitMinutes(mine){
-    if(!mine) return 0;
-    
-    const w = getWaitingTickets();
-    const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
-    
-    // 1 minute standard allocation for each waiting patient ahead
-    let totalMins = aheadCount * 1;
-
-    // Time for current patient inside the consultation room
-    if(servingCreatedAt && mine.createdAt > servingCreatedAt){
-      const callTime = servingStartedAt || servingCreatedAt;
-      const elapsedMs = Math.max(0, Date.now() - callTime);
-      const elapsedMins = Math.floor(elapsedMs / 60000);
-
-      // Base 1 min + 1 extra minute for every full minute elapsed overtime
-      const currentPatientEstimate = 1 + elapsedMins;
-      totalMins += currentPatientEstimate;
-    }
-
-    return totalMins;
-  }
-
-  function saveMyTicket(){ 
-    try{ 
-      if(myTicket) localStorage.setItem('miniclinic_ticket', JSON.stringify(myTicket));
-      else localStorage.removeItem('miniclinic_ticket');
-    }catch(e){} 
-  }
-
-  function loadMyTicket(){ 
-    try{ 
-      const s = localStorage.getItem('miniclinic_ticket'); 
-      if(s) myTicket = JSON.parse(s); 
-    }catch(e){} 
-  }
-
-  function clearMyTicket(){
-    myTicket = null;
-    hasAlertedForCurrentTurn = false;
-    lastAheadCount = null;
-    try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
-  }
-
-  function render(){
-    const greetingStr = getTimeGreeting();
-    const greetingHeader = document.getElementById('greetingHeader');
-
-    const w = getWaitingTickets();
-    const countEl = document.getElementById('patientQueueInfo');
-    if(countEl){
-      countEl.textContent = w.length + (w.length === 1 ? ' person currently waiting' : ' people currently waiting');
-    }
-
-    const card = document.getElementById('patientCard');
-    const takeSection = document.getElementById('takeSection');
-
-    const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
-
-    if(!mine){
-      greetingHeader.textContent = `${greetingStr}! Please check in below.`;
-      card.innerHTML = `<div class="label">No ticket yet</div><div class="num" style="color:var(--ink-soft)">— — —</div>`;
-      takeSection.style.display = 'block';
-    } else {
-      const patientName = mine.name ? mine.name : 'Patient';
-      const ticketStr = fmt(getTicketNumber(mine));
-      greetingHeader.textContent = `${greetingStr}, ${patientName}!`;
-
-      let statusHtml;
-      let estWaitHtml = "";
-
-      if(servingCreatedAt && mine.createdAt === servingCreatedAt){
-        statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
-        estWaitHtml = `<div class="est-box">⏱️ <span>0 mins</span> — Please step inside</div>`;
-        
-        if(!hasAlertedForCurrentTurn){
-          playTurnChime();
-          hasAlertedForCurrentTurn = true;
-        }
-      } else if (servingCreatedAt && mine.createdAt < servingCreatedAt) {
-        statusHtml = `<div class="status">Your turn has passed / completed</div>`;
-      } else {
-        const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
-
-        if(lastAheadCount !== null && ahead < lastAheadCount && ahead >= 0){
-          playAlertChime();
-        }
-        lastAheadCount = ahead;
-
-        const estMins = calculateEstWaitMinutes(mine);
-        estWaitHtml = `<div class="est-box">⏱️ Est. Wait Time: <span>~${estMins} ${estMins === 1 ? 'min' : 'mins'}</span></div>`;
-
-        statusHtml = ahead === 0
-          ? `<div class="status">You're next — please wait nearby</div>`
-          : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
-      }
-
-      card.innerHTML = `
-        <div class="label">Your ticket number</div>
-        <div class="num">${ticketStr}</div>
-        <div class="seam"></div>
-        ${statusHtml}
-        ${estWaitHtml}
-        <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
-      `;
-      takeSection.style.display = 'none';
-
-      const btn = document.getElementById('newTicketBtn');
-      if(btn){
-        btn.onclick = () => {
-          clearMyTicket();
-          render();
-        };
-      }
-    }
-  }
-
-  db.ref().on('value', (snapshot) => {
-    const data = snapshot.val() || {};
-    const ticketsObj = data.tickets || {};
-    
-    ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
-    servingCreatedAt = data.servingCreatedAt || null;
-    servingStartedAt = data.servingStartedAt || null;
-
-    if (myTicket) {
-      const existsInDb = ticketsList.some(t => t.id === myTicket.id);
-      if (!existsInDb && pendingSubmissionId !== myTicket.id) {
-        clearMyTicket();
-      }
-    }
-
-    document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
-    render();
-  }, (error) => {
-    document.getElementById('modeNote').textContent = "Can't connect to live database.";
-  });
-
-  // Re-render every 3 seconds to increment timer dynamically as time elapses
-  setInterval(() => {
-    if (myTicket) render();
-  }, 3000);
-
-  const nameInput = document.getElementById('nameInput');
-  const idInput = document.getElementById('idInput');
-  const takeBtn = document.getElementById('takeBtn');
-  const formErr = document.getElementById('formErr');
-
-  nameInput.addEventListener('input', e => {
-    e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-    formErr.textContent = '';
-  });
-
-  // Strict 12-digit digits-only filter
-  idInput.addEventListener('input', e => {
-    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 12);
-    formErr.textContent = '';
-  });
-
-  takeBtn.onclick = (e) => {
-    if(e) e.preventDefault();
-    initAudio();
-    
-    const nameVal = nameInput.value.trim();
-    const idVal = idInput.value.trim();
-
-    if(!nameVal){ 
-      formErr.textContent = 'Please enter your full name'; 
-      nameInput.focus(); 
-      return; 
-    }
-
-    if(!idVal){ 
-      formErr.textContent = 'Please enter your Malaysian IC number'; 
-      idInput.focus(); 
-      return; 
-    }
-
-    // Explicit 12-digit Malaysian IC check
-    if(idVal.length !== 12 || !/^\d{12}$/.test(idVal)){
-      formErr.textContent = 'IC number must be exactly 12 digits (e.g. 020512085432)';
-      idInput.focus();
-      return;
-    }
-
-    formErr.textContent = '';
-    takeBtn.disabled = true;
-
-    const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-    const newTicket = {
-      id: ticketId,
-      name: nameVal,
-      idNumber: idVal,
-      createdAt: Date.now()
+  <!-- SYSTEM JAVASCRIPT LOGIC -->
+  <script>
+    // --- STATE MANAGEMENT ---
+    let state = {
+      ticketCounter: parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10),
+      queue: JSON.parse(localStorage.getItem('mc_queue') || '[]'),
+      currentlyServing: JSON.parse(localStorage.getItem('mc_currentlyServing') || 'null'),
+      patientLog: JSON.parse(localStorage.getItem('mc_patientLog') || '[]'),
+      lastTicket: JSON.parse(localStorage.getItem('mc_lastTicket') || 'null')
     };
 
-    pendingSubmissionId = ticketId;
-    myTicket = newTicket;
-    hasAlertedForCurrentTurn = false;
-    lastAheadCount = null;
-    saveMyTicket();
-    render();
+    function saveState() {
+      localStorage.setItem('mc_ticketCounter', state.ticketCounter.toString());
+      localStorage.setItem('mc_queue', JSON.stringify(state.queue));
+      localStorage.setItem('mc_currentlyServing', JSON.stringify(state.currentlyServing));
+      localStorage.setItem('mc_patientLog', JSON.stringify(state.patientLog));
+      localStorage.setItem('mc_lastTicket', JSON.stringify(state.lastTicket));
+      renderUI();
+    }
 
-    db.ref('tickets/' + ticketId).set(newTicket).then(() => {
-      pendingSubmissionId = null;
-      nameInput.value = '';
-      idInput.value = '';
-      takeBtn.disabled = false;
-    }).catch((err) => {
-      pendingSubmissionId = null;
-      clearMyTicket();
-      takeBtn.disabled = false;
-      formErr.textContent = "Error issuing ticket. Try again.";
-      render();
+    // Sync state across multiple open tabs automatically
+    window.addEventListener('storage', () => {
+      state.ticketCounter = parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10);
+      state.queue = JSON.parse(localStorage.getItem('mc_queue') || '[]');
+      state.currentlyServing = JSON.parse(localStorage.getItem('mc_currentlyServing') || 'null');
+      state.patientLog = JSON.parse(localStorage.getItem('mc_patientLog') || '[]');
+      state.lastTicket = JSON.parse(localStorage.getItem('mc_lastTicket') || 'null');
+      renderUI();
     });
-  };
 
-  document.getElementById('simBtn').onclick = (e) => {
-    if(e) e.preventDefault();
-    initAudio();
-    const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-    const sampleNames = ["Ali Hassan", "Siti Nurhaliza", "Tan Wei Ming", "Muthu Raman", "Ahmad Zaki"];
-    const simTicket = {
-      id: simId,
-      name: sampleNames[Math.floor(Math.random() * sampleNames.length)],
-      idNumber: "0" + String(Math.floor(10000000001 + Math.random() * 89999999999)),
-      createdAt: Date.now()
-    };
-    db.ref('tickets/' + simId).set(simTicket);
-  };
+    const formatTicket = (num) => `A${String(num).padStart(3, '0')}`;
 
-  idInput.addEventListener('keydown', e => { 
-    if(e.key === 'Enter') takeBtn.click(); 
-  });
+    // --- TAB SWITCHER ---
+    function switchTab(tab) {
+      const staffView = document.getElementById('view-staff');
+      const patientView = document.getElementById('view-patient');
+      const btnStaff = document.getElementById('btn-tab-staff');
+      const btnPatient = document.getElementById('btn-tab-patient');
 
-  document.addEventListener('touchstart', () => { initAudio(); }, { once: true });
-  document.addEventListener('click', () => { initAudio(); }, { once: true });
+      if (tab === 'staff') {
+        staffView.classList.remove('hidden');
+        patientView.classList.add('hidden');
+        btnStaff.className = 'px-4 py-1.5 rounded-md text-xs font-semibold bg-emerald-500 text-slate-950 transition';
+        btnPatient.className = 'px-4 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition';
+      } else {
+        staffView.classList.add('hidden');
+        patientView.classList.remove('hidden');
+        btnPatient.className = 'px-4 py-1.5 rounded-md text-xs font-semibold bg-emerald-500 text-slate-950 transition';
+        btnStaff.className = 'px-4 py-1.5 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition';
+      }
+    }
 
-  loadMyTicket();
-</script>
+    // --- PATIENT ACTION: REGISTER TICKET ---
+    function handleRegister(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('patient-name');
+      const icInput = document.getElementById('patient-ic');
+
+      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const newTicket = {
+        id: Date.now(), // Unique internal ID
+        ticketNo: formatTicket(state.ticketCounter),
+        name: nameInput.value.trim(),
+        icNumber: icInput.value.trim(),
+        registeredAt: timeString,
+        calledAt: null
+      };
+
+      state.queue.push(newTicket);
+      state.ticketCounter += 1;
+      state.lastTicket = newTicket;
+
+      nameInput.value = '';
+      icInput.value = '';
+
+      saveState();
+    }
+
+    // --- STAFF ACTIONS ---
+    function callNextPatient() {
+      if (state.queue.length === 0) return;
+
+      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const next = state.queue.shift();
+      next.calledAt = timeString;
+
+      state.currentlyServing = next;
+      saveState();
+    }
+
+    function finishServing() {
+      if (!state.currentlyServing) return;
+
+      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const completedRecord = {
+        ...state.currentlyServing,
+        completedAt: timeString
+      };
+
+      state.patientLog.unshift(completedRecord);
+      state.currentlyServing = null;
+      saveState();
+    }
+
+    function resetSystem() {
+      if (confirm('Are you sure you want to reset active queue & counter back to A001?')) {
+        state.queue = [];
+        state.currentlyServing = null;
+        state.ticketCounter = 1;
+        state.patientLog = [];
+        state.lastTicket = null;
+        saveState();
+      }
+    }
+
+    // --- UI RENDER ENGINE ---
+    function renderUI() {
+      const query = document.getElementById('staff-search').value.toLowerCase().trim();
+
+      // 1. RENDER CURRENTLY SERVING CARD
+      const servingContainer = document.getElementById('serving-card-content');
+      if (state.currentlyServing) {
+        servingContainer.innerHTML = `
+          <div class="text-6xl font-extrabold text-emerald-400 tracking-tight my-2">
+            ${state.currentlyServing.ticketNo}
+          </div>
+          <div class="text-lg font-bold text-white">${state.currentlyServing.name}</div>
+          <p class="text-xs text-gray-400 mt-0.5">
+            IC: ${state.currentlyServing.icNumber} • Called at ${state.currentlyServing.calledAt}
+          </p>
+          <div class="flex gap-3 mt-5">
+            <button onclick="callNextPatient()" ${state.queue.length === 0 ? 'disabled' : ''} 
+              class="flex-1 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-bold py-2.5 px-4 rounded-lg transition text-sm">
+              Call Next Patient →
+            </button>
+            <button onclick="finishServing()" class="bg-rose-500/90 hover:bg-rose-500 text-white font-bold py-2.5 px-6 rounded-lg transition text-sm">
+              Finish / Mark Done
+            </button>
+          </div>
+        `;
+      } else {
+        servingContainer.innerHTML = `
+          <div class="py-6 text-center">
+            <p class="text-gray-400 text-sm mb-4">No patient currently in consultation.</p>
+            <button onclick="callNextPatient()" ${state.queue.length === 0 ? 'disabled' : ''} 
+              class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-bold py-2.5 px-6 rounded-lg transition text-sm">
+              Call Next Patient (${state.queue.length} Waiting)
+            </button>
+          </div>
+        `;
+      }
+
+      // 2. RENDER WAITING QUEUE (Filtered)
+      const filteredQueue = state.queue.filter(p => 
+        p.name.toLowerCase().includes(query) || p.icNumber.includes(query)
+      );
+
+      document.getElementById('waiting-patients-title').innerText = `Waiting Patients (${filteredQueue.length})`;
+
+      const waitingListContainer = document.getElementById('waiting-patients-list');
+      if (filteredQueue.length === 0) {
+        waitingListContainer.innerHTML = `<p class="text-center text-gray-500 text-xs py-4">No patients currently waiting</p>`;
+      } else {
+        waitingListContainer.innerHTML = filteredQueue.map((p, index) => `
+          <div class="bg-[#122320]/60 border border-emerald-900/30 p-3 rounded-lg flex justify-between items-center">
+            <div class="flex items-center gap-4">
+              <span class="font-bold text-emerald-400 text-base">${p.ticketNo}</span>
+              <div>
+                <p class="text-xs font-semibold text-white">${p.name}</p>
+                <p class="text-[10px] text-gray-400">IC: ${p.icNumber}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-gray-400 block">Reg: ${p.registeredAt}</span>
+              <span class="text-[10px] text-emerald-400/80 font-medium">#${index + 1} in line</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 3. RENDER PATIENT LOG (Filtered)
+      const filteredLog = state.patientLog.filter(p => 
+        p.name.toLowerCase().includes(query) || p.icNumber.includes(query)
+      );
+
+      const todayStr = new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' });
+      document.getElementById('log-title').innerText = `Today's Patient Log (${todayStr})`;
+      document.getElementById('served-count-badge').innerText = `${state.patientLog.length} served`;
+
+      const logListContainer = document.getElementById('patient-log-list');
+      if (filteredLog.length === 0) {
+        logListContainer.innerHTML = `<p class="text-center text-gray-500 text-xs py-4">No completed sessions logged</p>`;
+      } else {
+        logListContainer.innerHTML = filteredLog.map(p => `
+          <div class="bg-[#122320]/30 border border-emerald-900/20 p-3 rounded-lg flex justify-between items-center">
+            <div class="flex items-center gap-4">
+              <span class="font-bold text-gray-300 text-sm">${p.ticketNo}</span>
+              <div>
+                <p class="text-xs font-semibold text-gray-200">${p.name}</p>
+                <p class="text-[10px] text-gray-400">IC: ${p.icNumber}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] bg-emerald-900/40 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40">Completed</span>
+              <p class="text-[10px] text-gray-400 mt-1">${p.completedAt}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 4. RENDER PATIENT KIOSK LIVE DISPLAY
+      document.getElementById('live-display-number').innerText = state.currentlyServing ? state.currentlyServing.ticketNo : '---';
+      document.getElementById('live-display-name').innerText = state.currentlyServing ? `Patient: ${state.currentlyServing.name}` : 'Waiting for next patient...';
+
+      // 5. RENDER PATIENT ISSUED TICKET CARD
+      if (state.lastTicket) {
+        document.getElementById('ticket-card-number').innerText = state.lastTicket.ticketNo;
+        document.getElementById('ticket-card-name').innerText = state.lastTicket.name;
+        document.getElementById('ticket-card-ic').innerText = `IC: ${state.lastTicket.icNumber}`;
+        document.getElementById('ticket-card-time').innerText = state.lastTicket.registeredAt;
+
+        const posIndex = state.queue.findIndex(p => p.id === state.lastTicket.id);
+        document.getElementById('ticket-card-pos').innerText = posIndex >= 0 ? `${posIndex} patients ahead` : 'Serving / Completed';
+      }
+    }
+
+    // Initial render on page load
+    renderUI();
+  </script>
 </body>
 </html>
