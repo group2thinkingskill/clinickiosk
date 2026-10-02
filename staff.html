@@ -27,7 +27,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
 *{box-sizing:border-box;}
 body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;}
-.wrap{max-width:800px; margin:0 auto; padding:28px 20px 48px;}
+.wrap{max-width:840px; margin:0 auto; padding:28px 20px 48px;}
 .brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
 .brand-left{display:flex; align-items:center; gap:10px;}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;}
@@ -83,7 +83,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   </div>
 
   <div class="grid">
-    <!-- 1. SEARCH BOX CARD (TOP) -->
+    <!-- 1. PATIENT SEARCH BOX (TOP) -->
     <div class="card">
       <div class="label">Patient Search & Lookup</div>
       <div class="search-box">
@@ -124,11 +124,11 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       </div>
     </div>
 
-    <!-- 3. UPCOMING QUEUE CARD WITH 4 COLUMNS -->
+    <!-- 3. UPCOMING QUEUE CARD (Clears when reset) -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div class="label" style="margin:0;">Upcoming Patients (<span id="waitingCount">0</span>)</div>
-        <button class="ghost" id="resetBtn" style="color:var(--coral);">Reset Entire Queue</button>
+        <button class="ghost" id="resetBtn" style="color:var(--coral);">Reset Active Queue</button>
       </div>
 
       <div class="table-wrap">
@@ -148,7 +148,31 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       </div>
     </div>
 
-    <!-- 4. DAILY PATIENT LOG COUNTER (BOTTOM) -->
+    <!-- 4. PERMANENT DAILY REGISTRATION LOG TABLE (NOT erased on Queue Reset) -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <div class="label" style="margin:0;">Daily Patient Registry Log</div>
+        <span style="font-size:.75rem; color:var(--teal); font-weight:600;">🔒 Permanent Record</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Queue No.</th>
+              <th>Patient Name</th>
+              <th>IC Number</th>
+              <th>Reg. Date & Time</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <tr><td colspan="4" style="text-align:center; color:var(--ink-soft);">No patient records logged today</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. DAILY PATIENT COUNTER BAR (BOTTOM) -->
     <div class="stats-bar">
       <div>Total Patients Registered Today: <span class="stats-count" id="todayCount">0</span></div>
       <span class="date-tag" id="currentDateStr">(---)</span>
@@ -177,12 +201,13 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   const db = firebase.database();
 
   let ticketsList = [];
+  let logsList = [];
   let servingCreatedAt = null;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
   function getTicketNumber(t){
-    const idx = ticketsList.findIndex(x => x.id === t.id);
+    const idx = logsList.findIndex(x => x.id === t.id);
     return idx !== -1 ? idx + 1 : 1;
   }
 
@@ -205,7 +230,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   }
 
   function renderStaff(){
-    // Currently Serving Card
+    // Currently Serving
     const servingTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
     const servingNumEl = document.getElementById('servingNum');
     const servingDetails = document.getElementById('servingDetails');
@@ -225,7 +250,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       completeBtn.style.display = 'none';
     }
 
-    // Upcoming Waiting Queue (4 columns: Queue No, Name, IC Number, Reg Time)
+    // Upcoming Queue Table
     const waitingTickets = servingCreatedAt 
       ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
       : ticketsList;
@@ -246,18 +271,32 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       `).join('');
     }
 
-    // Daily Summary Log Counter (Bottom)
-    const todayStr = getFormattedTodayDate();
-    document.getElementById('currentDateStr').textContent = `(${todayStr})`;
-
+    // Daily Patient Registry Log Table (Permanent)
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayMs = startOfToday.getTime();
 
-    const todayTickets = ticketsList.filter(t => t.createdAt >= startOfTodayMs);
-    document.getElementById('todayCount').textContent = todayTickets.length;
+    const todayLogs = logsList.filter(t => t.createdAt >= startOfTodayMs);
 
-    // Refresh Search Filter Results
+    const logBody = document.getElementById('logTableBody');
+    if (todayLogs.length === 0) {
+      logBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-soft); padding:18px;">No patient records logged today</td></tr>';
+    } else {
+      logBody.innerHTML = todayLogs.map(t => `
+        <tr>
+          <td class="mono">${fmt(getTicketNumber(t))}</td>
+          <td><strong>${t.name || 'Anonymous'}</strong></td>
+          <td class="mono" style="color:var(--ink-soft);">${t.idNumber || '-'}</td>
+          <td class="mono" style="color:var(--ink-soft);">${formatFullDateTime(t.createdAt)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Bottom Stats Counter
+    const todayStr = getFormattedTodayDate();
+    document.getElementById('currentDateStr').textContent = `(${todayStr})`;
+    document.getElementById('todayCount').textContent = todayLogs.length;
+
     handleSearch();
   }
 
@@ -272,7 +311,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       return;
     }
 
-    const matches = ticketsList.filter(t => 
+    const matches = logsList.filter(t => 
       (t.name && t.name.toLowerCase().includes(query)) || 
       (t.idNumber && t.idNumber.toLowerCase().includes(query))
     );
@@ -310,8 +349,17 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
     const ticketsObj = data.tickets || {};
+    const logsObj = data.logs || {};
+
+    // Auto-archive any incoming tickets into permanent logs
+    Object.keys(ticketsObj).forEach(key => {
+      if (!logsObj[key]) {
+        db.ref('logs/' + key).set(ticketsObj[key]);
+      }
+    });
 
     ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+    logsList = Object.values(logsObj).sort((a, b) => a.createdAt - b.createdAt);
     servingCreatedAt = data.servingCreatedAt || null;
 
     document.getElementById('liveBadge').textContent = 'Live Connected';
@@ -327,7 +375,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       : ticketsList;
 
     if (waitingTickets.length === 0) {
-      alert('No patients waiting in queue.');
+      alert('No patients waiting in active queue.');
       return;
     }
 
@@ -356,9 +404,12 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
     }
   };
 
+  // Resets ONLY active queue (tickets & serving state), keeping daily logs intact
   document.getElementById('resetBtn').onclick = () => {
-    if(confirm('Are you sure you want to reset the entire queue? This clears all active tickets.')){
-      db.ref().remove();
+    if(confirm('Are you sure you want to reset the active queue? (Your daily patient registry log will be safely preserved).')){
+      db.ref('tickets').remove();
+      db.ref('servingCreatedAt').remove();
+      db.ref('servingStartedAt').remove();
     }
   };
 </script>
