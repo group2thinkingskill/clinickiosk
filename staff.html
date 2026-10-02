@@ -27,7 +27,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
 *{box-sizing:border-box;}
 body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;}
-.wrap{max-width:680px; margin:0 auto; padding:28px 20px 48px;}
+.wrap{max-width:720px; margin:0 auto; padding:28px 20px 48px;}
 .brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
 .brand-left{display:flex; align-items:center; gap:10px;}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;}
@@ -44,6 +44,14 @@ body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-
 .patient-name{font-size:1.1rem;font-weight:700;color:var(--teal-deep);}
 .patient-ic{font-family:'IBM Plex Mono',monospace;font-size:.9rem;color:var(--ink-soft);margin-top:2px;}
 
+.stats-bar{display:flex; justify-content:space-between; align-items:center; background:var(--paper); padding:12px 16px; border-radius:10px; border:1px solid var(--line); font-size:.9rem; font-weight:600;}
+.stats-bar span.date-tag{color:var(--ink-soft); font-weight:500; font-family:'IBM Plex Mono',monospace; font-size:.85rem;}
+.stats-count{color:var(--teal); font-weight:700; font-size:1.05rem;}
+
+.search-box{margin-top:16px; position:relative;}
+.idInput{width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font:inherit; font-size:.95rem;}
+.idInput:focus{outline:2px solid var(--teal); outline-offset:1px;}
+
 .btn-group{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
 button.primary{flex:1; min-width:140px; padding:12px 16px; border:none; border-radius:10px; background:var(--teal); color:#fff; font:inherit; font-weight:600; font-size:.95rem; cursor:pointer;}
 button.primary:active{background:var(--teal-deep);}
@@ -52,10 +60,14 @@ button.danger{padding:12px 16px; border:none; border-radius:10px; background:var
 button.ghost{background:none; border:none; color:var(--ink-soft); font:inherit; font-size:.85rem; text-decoration:underline; cursor:pointer; padding:4px;}
 
 .table-wrap{margin-top:14px; overflow-x:auto;}
-table{width:100%; border-collapse:collapse; font-size:.9rem; text-align:left;}
+table{width:100%; border-collapse:collapse; font-size:.88rem; text-align:left;}
 th{font-size:.7rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.08em; padding:10px; border-bottom:1px solid var(--line);}
 td{padding:12px 10px; border-bottom:1px solid var(--line);}
 .mono{font-family:'IBM Plex Mono',monospace; font-weight:600;}
+.status-tag{padding:3px 8px; border-radius:6px; font-size:.75rem; font-weight:600; display:inline-block;}
+.tag-serving{background:rgba(201,68,48,0.15); color:var(--coral);}
+.tag-waiting{background:rgba(20,107,98,0.15); color:var(--teal);}
+.tag-completed{background:rgba(75,101,96,0.15); color:var(--ink-soft);}
 
 footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78rem;}
 </style>
@@ -71,6 +83,13 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   </div>
 
   <div class="grid">
+    <!-- Daily Summary Stat Log Bar -->
+    <div class="stats-bar">
+      <div>Patients Registered Today: <span class="stats-count" id="todayCount">0</span></div>
+      <span class="date-tag" id="currentDateStr">(---)</span>
+    </div>
+
+    <!-- Currently Serving Card -->
     <div class="card" style="text-align:center;">
       <div class="label">Currently Serving</div>
       <div class="num" id="servingNum" style="color:var(--coral)">— — —</div>
@@ -85,6 +104,33 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       </div>
     </div>
 
+    <!-- Search Box Card -->
+    <div class="card">
+      <div class="label">Search Patient Records</div>
+      <div class="search-box">
+        <input type="text" id="searchInput" class="idInput" placeholder="🔍 Search by Patient Name or IC Number..." autocomplete="off">
+      </div>
+
+      <div id="searchResultsArea" style="display:none; margin-top:14px;">
+        <div style="font-size:.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;">Search Results</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Name</th>
+                <th>IC Number</th>
+                <th>Reg. Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="searchResultsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Queue Card -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div class="label" style="margin:0;">Upcoming Patients (<span id="waitingCount">0</span>)</div>
@@ -139,7 +185,30 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
     return idx !== -1 ? idx + 1 : 1;
   }
 
+  function formatTimestamp(ts){
+    if(!ts) return '-';
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function getFormattedTodayDate(){
+    const now = new Date();
+    return now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
   function renderStaff(){
+    // Date & Today's Log Counter
+    const todayStr = getFormattedTodayDate();
+    document.getElementById('currentDateStr').textContent = `(${todayStr})`;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
+
+    const todayTickets = ticketsList.filter(t => t.createdAt >= startOfTodayMs);
+    document.getElementById('todayCount').textContent = todayTickets.length;
+
+    // Currently Serving
     const servingTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
     const servingNumEl = document.getElementById('servingNum');
     const servingDetails = document.getElementById('servingDetails');
@@ -159,6 +228,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       completeBtn.style.display = 'none';
     }
 
+    // Upcoming Waiting Queue
     const waitingTickets = servingCreatedAt 
       ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
       : ticketsList;
@@ -177,7 +247,56 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
         </tr>
       `).join('');
     }
+
+    // Re-run Search if active
+    handleSearch();
   }
+
+  function handleSearch(){
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const resultsArea = document.getElementById('searchResultsArea');
+    const resultsBody = document.getElementById('searchResultsBody');
+
+    if(!query){
+      resultsArea.style.display = 'none';
+      resultsBody.innerHTML = '';
+      return;
+    }
+
+    const matches = ticketsList.filter(t => 
+      (t.name && t.name.toLowerCase().includes(query)) || 
+      (t.idNumber && t.idNumber.toLowerCase().includes(query))
+    );
+
+    resultsArea.style.display = 'block';
+
+    if(matches.length === 0){
+      resultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-soft); padding:12px;">No matching records found</td></tr>';
+    } else {
+      resultsBody.innerHTML = matches.map(t => {
+        let statusTag = '';
+        if(servingCreatedAt && t.createdAt === servingCreatedAt){
+          statusTag = '<span class="status-tag tag-serving">Serving</span>';
+        } else if(servingCreatedAt && t.createdAt < servingCreatedAt){
+          statusTag = '<span class="status-tag tag-completed">Completed</span>';
+        } else {
+          statusTag = '<span class="status-tag tag-waiting">Waiting</span>';
+        }
+
+        return `
+          <tr>
+            <td class="mono">${fmt(getTicketNumber(t))}</td>
+            <td><strong>${t.name || 'Anonymous'}</strong></td>
+            <td class="mono" style="color:var(--ink-soft);">${t.idNumber || '-'}</td>
+            <td class="mono" style="color:var(--ink-soft);">${formatTimestamp(t.createdAt)}</td>
+            <td>${statusTag}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  document.getElementById('searchInput').addEventListener('input', handleSearch);
 
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
