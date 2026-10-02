@@ -120,6 +120,36 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let hasAlertedForCurrentTurn = false;
   let lastAheadCount = null;
   let audioCtx = null;
+  let swRegistration = null;
+
+  // REGISTER SERVICE WORKER FOR CHROME PUSH NOTIFICATIONS
+  if ('serviceWorker' in navigator && 'Notification' in window) {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      swRegistration = reg;
+    }).catch((err) => {
+      console.log('SW registration failed:', err);
+    });
+  }
+
+  function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+  }
+
+  function triggerChromeNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      if (swRegistration && swRegistration.active) {
+        swRegistration.active.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          title: title,
+          body: body
+        });
+      } else {
+        new Notification(title, { body: body });
+      }
+    }
+  }
 
   function getTimeGreeting(){
     const hr = new Date().getHours();
@@ -297,6 +327,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         
         if(!hasAlertedForCurrentTurn){
           playTurnChime();
+          triggerChromeNotification(
+            `🔔 IT'S YOUR TURN! (${ticketStr})`,
+            `Hi ${patientName}, please proceed to the Mini Clinic consultation room immediately.`
+          );
           hasAlertedForCurrentTurn = true;
         }
       } else if (servingCreatedAt && mine.createdAt < servingCreatedAt) {
@@ -306,6 +340,17 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
         if(lastAheadCount !== null && ahead < lastAheadCount && ahead >= 0){
           playAlertChime();
+          if (ahead === 0) {
+            triggerChromeNotification(
+              `⚠️ YOU'RE NEXT IN QUEUE! (${ticketStr})`,
+              `Hi ${patientName}, you are next in line. Please get ready near the consultation room.`
+            );
+          } else {
+            triggerChromeNotification(
+              `Queue Update (${ticketStr})`,
+              `Hi ${patientName}, ${ahead} ${ahead === 1 ? 'person is' : 'people are'} ahead of you in line.`
+            );
+          }
         }
         lastAheadCount = ahead;
 
@@ -376,10 +421,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
   });
 
-  // ATOMIC GAP-FREE TICKET CREATION
   takeBtn.onclick = (e) => {
     if(e) e.preventDefault();
     initAudio();
+    requestNotificationPermission();
     
     const nameVal = nameInput.value.trim();
     const idVal = idInput.value.trim();
@@ -453,6 +498,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   if (simBtn) {
     simBtn.onclick = () => {
       initAudio();
+      requestNotificationPermission();
 
       const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
       const names = ['Ahmad Sattiya', 'Shaarvesh Kumar', 'Lim Wei Ting', 'Muthusamy', 'Nur Aini', 'Chong Jin', 'Ratha'];
