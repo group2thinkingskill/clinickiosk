@@ -208,28 +208,32 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     return ticketsList.filter(t => t.createdAt > servingCreatedAt);
   }
 
-  // 1-MINUTE DYNAMIC LOOP LOGIC
+  // ACCURATE 1-MINUTE DYNAMIC QUEUE CALCULATION
   function calculateEstWaitMinutes(mine){
     if(!mine) return 0;
     
-    const w = getWaitingTickets();
-    const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
-    
-    // Base time: 1 minute for each patient ahead in line
-    let totalMins = aheadCount * 1;
-
-    // Calculate time for currently served patient
-    if(servingCreatedAt && mine.createdAt > servingCreatedAt){
-      const callTime = servingStartedAt || servingCreatedAt;
-      const elapsedMs = Math.max(0, Date.now() - callTime);
-      const extraMins = Math.floor(elapsedMs / 60000); // Loops +1 min every full 60 seconds
-
-      totalMins += (1 + extraMins);
-    } else if (!servingCreatedAt && aheadCount === 0) {
-      totalMins = 1;
+    // If ticket is currently inside with doctor
+    if (servingCreatedAt && mine.createdAt === servingCreatedAt) {
+      return 0;
     }
 
-    return totalMins;
+    const w = getWaitingTickets();
+    const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
+
+    if (!servingCreatedAt) {
+      // Doctor hasn't called anyone into consultation room yet
+      // 1st person (0 ahead) -> 1 min
+      // 2nd person (1 ahead) -> 2 mins
+      return (aheadCount + 1) * 1;
+    } else {
+      // Doctor is actively seeing a patient
+      const callTime = servingStartedAt || servingCreatedAt;
+      const elapsedMs = Math.max(0, Date.now() - callTime);
+      const extraMins = Math.floor(elapsedMs / 60000); // Loops +1 min for every full 60 seconds elapsed
+      const currentPatientMins = 1 + extraMins;
+
+      return currentPatientMins + (aheadCount * 1);
+    }
   }
 
   function saveMyTicket(){ 
@@ -346,7 +350,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     document.getElementById('modeNote').textContent = "Can't connect to live database.";
   });
 
-  // Refreshes every 1 second to increment wait time continuously as minutes pass
+  // Re-evaluates wait time dynamically every 1s
   setInterval(() => {
     if (myTicket) render();
   }, 1000);
