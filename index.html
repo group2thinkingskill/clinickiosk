@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Staff Control Panel - Mini Clinic Queue System</title>
+  <title>Patient Kiosk - Mini Clinic Queue System</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -14,77 +14,81 @@
     <div class="flex items-center gap-2">
       <span class="bg-emerald-500 text-slate-950 font-bold w-7 h-7 flex items-center justify-center rounded-lg text-lg">+</span>
       <span class="font-bold text-emerald-400 text-base md:text-lg tracking-wide">Mini Clinic Queue System</span>
-      <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full border border-emerald-800/50 font-semibold ml-2">Staff Panel</span>
+      <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full border border-emerald-800/50 font-semibold ml-2">Patient Kiosk</span>
     </div>
-    
-    <a href="patient.html" target="_blank" class="text-xs text-emerald-400 hover:text-emerald-300 bg-[#122320] border border-emerald-900/60 px-3.5 py-1.5 rounded-lg hover:bg-emerald-900/30 transition flex items-center gap-1.5 font-medium">
-      <span>🖥️</span> Open Patient Kiosk ↗
-    </a>
+
+    <div class="flex items-center gap-3">
+      <a href="staff.html" target="_blank" class="text-xs text-emerald-400 hover:text-emerald-300 bg-[#122320] border border-emerald-900/60 px-3.5 py-1.5 rounded-lg hover:bg-emerald-900/30 transition flex items-center gap-1 font-medium">
+        <span>👨‍⚕️</span> Staff Console ↗
+      </a>
+      <a href="patient.html" class="text-xs text-gray-400 hover:text-white bg-[#122320] border border-emerald-900/60 px-3.5 py-1.5 rounded-lg transition">
+        Patient Portal
+      </a>
+    </div>
   </header>
 
-  <main class="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+  <main class="max-w-4xl mx-auto p-4 md:p-6 grid md:grid-cols-2 gap-6">
     
-    <!-- Staff Panel Header with Reset Everything Button -->
-    <div class="flex justify-between items-center">
-      <div>
-        <h1 class="text-xl font-bold flex items-center gap-2 text-white">
-          <span class="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-lg text-sm">✚</span>
-          Staff Control Panel
-        </h1>
-        <p class="text-xs text-gray-400">Mini Clinic — Doctor Console</p>
-      </div>
-      
-      <!-- RESET EVERYTHING BUTTON -->
-      <button onclick="resetEverything()" class="text-xs text-rose-300 hover:text-white bg-rose-950/60 border border-rose-800/80 px-3.5 py-2 rounded-lg hover:bg-rose-700 transition font-medium flex items-center gap-1.5">
-        <span>⚠️</span> Reset Everything (Queue & Log)
-      </button>
+    <!-- PATIENT REGISTRATION FORM -->
+    <div class="bg-[#122320] border border-emerald-900/50 rounded-xl p-6 shadow-lg h-fit">
+      <h2 class="text-lg font-bold text-emerald-400 mb-1">Get Queue Ticket</h2>
+      <p class="text-xs text-gray-400 mb-5">Please register your details below to obtain a queue ticket.</p>
+
+      <form id="patient-form" onsubmit="handleRegister(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">Full Name</label>
+          <input type="text" id="patient-name" required placeholder="e.g. Shaarvesh / Sattiya" 
+            class="w-full bg-[#0b1715] border border-emerald-900/60 rounded-lg p-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">IC Number (MyKad / Passport)</label>
+          <input type="text" id="patient-ic" required placeholder="e.g. 080603050342" 
+            class="w-full bg-[#0b1715] border border-emerald-900/60 rounded-lg p-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500" />
+        </div>
+
+        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 px-4 rounded-lg text-xs transition mt-2">
+          Take Ticket Number
+        </button>
+      </form>
     </div>
 
-    <!-- Search Bar -->
-    <div class="relative">
-      <span class="absolute left-3.5 top-2.5 text-gray-400 text-sm">🔍</span>
-      <input type="text" id="staff-search" oninput="renderUI()" placeholder="Search patient by Name or IC Number..." 
-        class="w-full bg-[#122320]/80 border border-emerald-900/50 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"/>
-    </div>
-
-    <!-- Currently Serving Container -->
-    <div class="bg-[#122320] border border-emerald-800/40 rounded-xl p-6 shadow-xl">
-      <p class="text-[11px] font-bold tracking-wider text-emerald-400/80 uppercase mb-2">CURRENTLY SERVING</p>
-      <div id="serving-card-content">
-        <!-- Dynamic Serving Content Rendered via JS -->
+    <!-- LIVE DISPLAY & ACTIVE TICKET CARD -->
+    <div class="space-y-4">
+      <!-- Live Call Display -->
+      <div class="bg-[#122320] border border-emerald-900/50 rounded-xl p-5 text-center">
+        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Now Serving at Room 1</p>
+        <div id="live-display-number" class="text-5xl font-black text-emerald-400 my-2">---</div>
+        <p id="live-display-name" class="text-xs text-gray-400">Waiting for next patient...</p>
       </div>
-    </div>
 
-    <!-- Waiting Patients Section -->
-    <div>
-      <div class="border-b border-emerald-900/40 pb-2 mb-3">
-        <h2 id="waiting-patients-title" class="text-emerald-400 font-semibold text-xs tracking-wide">
-          Waiting Patients (0)
-        </h2>
-      </div>
-      <div id="waiting-patients-list" class="space-y-2">
-        <!-- Dynamic Waiting Queue Rendered via JS -->
-      </div>
-    </div>
-
-    <!-- Today's Patient Log Section -->
-    <div>
-      <div class="flex justify-between items-center border-b border-emerald-900/40 pb-2 mb-3">
-        <h2 id="log-title" class="text-emerald-400 font-semibold text-xs tracking-wide">
-          Today's Patient Log
-        </h2>
-        <span id="served-count-badge" class="bg-emerald-900/40 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full border border-emerald-700/30">
-          0 served
+      <!-- Issued Active Ticket Receipt -->
+      <div id="my-ticket-card" class="bg-[#122320]/80 border-2 border-emerald-500/60 rounded-xl p-5 text-center space-y-3">
+        <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+          Your Active Ticket
         </span>
-      </div>
-      <div id="patient-log-list" class="space-y-2">
-        <!-- Dynamic Log Rendered via JS -->
+        <div>
+          <div id="ticket-card-number" class="text-5xl font-black text-white my-1">---</div>
+          <p id="ticket-card-name" class="text-xs font-semibold text-emerald-300">No ticket issued</p>
+          <p id="ticket-card-ic" class="text-[10px] text-gray-400">Please register on the left form</p>
+        </div>
+
+        <div class="pt-2 border-t border-emerald-900/40 flex justify-around text-xs">
+          <div>
+            <p class="text-gray-400 text-[10px]">Registered At</p>
+            <p id="ticket-card-time" class="font-semibold text-emerald-400">--:--</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-[10px]">Position in Line</p>
+            <p id="ticket-card-pos" class="font-semibold text-emerald-400">--</p>
+          </div>
+        </div>
       </div>
     </div>
 
   </main>
 
-  <!-- STAFF JAVASCRIPT LOGIC -->
+  <!-- PATIENT JAVASCRIPT LOGIC -->
   <script>
     let state = {
       ticketCounter: parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10),
@@ -103,7 +107,7 @@
       renderUI();
     }
 
-    // Synchronize instantly when patients register on patient.html
+    // Real-time sync across browser windows
     window.addEventListener('storage', () => {
       state.ticketCounter = parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10);
       state.queue = JSON.parse(localStorage.getItem('mc_queue') || '[]');
@@ -113,141 +117,54 @@
       renderUI();
     });
 
-    function callNextPatient() {
-      if (state.queue.length === 0) return;
+    const formatTicket = (num) => `A${String(num).padStart(3, '0')}`;
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('patient-name');
+      const icInput = document.getElementById('patient-ic');
 
       const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const next = state.queue.shift();
-      next.calledAt = timeString;
 
-      state.currentlyServing = next;
-      saveState();
-    }
-
-    function finishServing() {
-      if (!state.currentlyServing) return;
-
-      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const completedRecord = {
-        ...state.currentlyServing,
-        completedAt: timeString
+      const newTicket = {
+        id: Date.now(),
+        ticketNo: formatTicket(state.ticketCounter),
+        name: nameInput.value.trim(),
+        icNumber: icInput.value.trim(),
+        registeredAt: timeString,
+        calledAt: null
       };
 
-      state.patientLog.unshift(completedRecord);
-      state.currentlyServing = null;
+      state.queue.push(newTicket);
+      state.ticketCounter += 1;
+      state.lastTicket = newTicket;
+
+      nameInput.value = '';
+      icInput.value = '';
+
       saveState();
-    }
-
-    function resetEverything() {
-      if (confirm('Are you sure you want to RESET EVERYTHING?\n\nThis will permanently wipe:\n• Active waiting queue\n• Currently serving patient\n• Complete patient log history\n• Reset ticket counter back to A001')) {
-        state.queue = [];
-        state.currentlyServing = null;
-        state.patientLog = [];
-        state.ticketCounter = 1;
-        state.lastTicket = null;
-
-        localStorage.removeItem('mc_ticketCounter');
-        localStorage.removeItem('mc_queue');
-        localStorage.removeItem('mc_currentlyServing');
-        localStorage.removeItem('mc_patientLog');
-        localStorage.removeItem('mc_lastTicket');
-
-        saveState();
-      }
     }
 
     function renderUI() {
-      const query = document.getElementById('staff-search').value.toLowerCase().trim();
+      // 1. LIVE DISPLAY
+      document.getElementById('live-display-number').innerText = state.currentlyServing ? state.currentlyServing.ticketNo : '---';
+      document.getElementById('live-display-name').innerText = state.currentlyServing ? `Patient: ${state.currentlyServing.name}` : 'Waiting for next patient...';
 
-      // 1. RENDER CURRENTLY SERVING CARD
-      const servingContainer = document.getElementById('serving-card-content');
-      if (state.currentlyServing) {
-        servingContainer.innerHTML = `
-          <div class="text-6xl font-extrabold text-emerald-400 tracking-tight my-2">
-            ${state.currentlyServing.ticketNo}
-          </div>
-          <div class="text-lg font-bold text-white">${state.currentlyServing.name}</div>
-          <p class="text-xs text-gray-400 mt-0.5">
-            IC: ${state.currentlyServing.icNumber} • Called at ${state.currentlyServing.calledAt}
-          </p>
-          <div class="flex gap-3 mt-5">
-            <button onclick="callNextPatient()" ${state.queue.length === 0 ? 'disabled' : ''} 
-              class="flex-1 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 font-bold py-2.5 px-4 rounded-lg transition text-sm">
-              Call Next Patient →
-            </button>
-            <button onclick="finishServing()" class="bg-rose-500/90 hover:bg-rose-500 text-white font-bold py-2.5 px-6 rounded-lg transition text-sm">
-              Finish / Mark Done
-            </button>
-          </div>
-        `;
+      // 2. TICKET RECEIPT CARD
+      if (state.lastTicket) {
+        document.getElementById('ticket-card-number').innerText = state.lastTicket.ticketNo;
+        document.getElementById('ticket-card-name').innerText = state.lastTicket.name;
+        document.getElementById('ticket-card-ic').innerText = `IC: ${state.lastTicket.icNumber}`;
+        document.getElementById('ticket-card-time').innerText = state.lastTicket.registeredAt;
+
+        const posIndex = state.queue.findIndex(p => p.id === state.lastTicket.id);
+        document.getElementById('ticket-card-pos').innerText = posIndex >= 0 ? `${posIndex} patients ahead` : 'Serving / Completed';
       } else {
-        servingContainer.innerHTML = `
-          <div class="py-6 text-center">
-            <p class="text-gray-400 text-sm mb-4">No patient currently in consultation.</p>
-            <button onclick="callNextPatient()" ${state.queue.length === 0 ? 'disabled' : ''} 
-              class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-bold py-2.5 px-6 rounded-lg transition text-sm">
-              Call Next Patient (${state.queue.length} Waiting)
-            </button>
-          </div>
-        `;
-      }
-
-      // 2. RENDER WAITING QUEUE (Filtered)
-      const filteredQueue = state.queue.filter(p => 
-        p.name.toLowerCase().includes(query) || p.icNumber.includes(query)
-      );
-
-      document.getElementById('waiting-patients-title').innerText = `Waiting Patients (${filteredQueue.length})`;
-
-      const waitingListContainer = document.getElementById('waiting-patients-list');
-      if (filteredQueue.length === 0) {
-        waitingListContainer.innerHTML = `<p class="text-center text-gray-500 text-xs py-4">No patients currently waiting</p>`;
-      } else {
-        waitingListContainer.innerHTML = filteredQueue.map((p, index) => `
-          <div class="bg-[#122320]/60 border border-emerald-900/30 p-3 rounded-lg flex justify-between items-center">
-            <div class="flex items-center gap-4">
-              <span class="font-bold text-emerald-400 text-base">${p.ticketNo}</span>
-              <div>
-                <p class="text-xs font-semibold text-white">${p.name}</p>
-                <p class="text-[10px] text-gray-400">IC: ${p.icNumber}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] text-gray-400 block">Reg: ${p.registeredAt}</span>
-              <span class="text-[10px] text-emerald-400/80 font-medium">#${index + 1} in line</span>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // 3. RENDER PATIENT LOG (Filtered)
-      const filteredLog = state.patientLog.filter(p => 
-        p.name.toLowerCase().includes(query) || p.icNumber.includes(query)
-      );
-
-      const todayStr = new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' });
-      document.getElementById('log-title').innerText = `Today's Patient Log (${todayStr})`;
-      document.getElementById('served-count-badge').innerText = `${state.patientLog.length} served`;
-
-      const logListContainer = document.getElementById('patient-log-list');
-      if (filteredLog.length === 0) {
-        logListContainer.innerHTML = `<p class="text-center text-gray-500 text-xs py-4">No completed sessions logged</p>`;
-      } else {
-        logListContainer.innerHTML = filteredLog.map(p => `
-          <div class="bg-[#122320]/30 border border-emerald-900/20 p-3 rounded-lg flex justify-between items-center">
-            <div class="flex items-center gap-4">
-              <span class="font-bold text-gray-300 text-sm">${p.ticketNo}</span>
-              <div>
-                <p class="text-xs font-semibold text-gray-200">${p.name}</p>
-                <p class="text-[10px] text-gray-400">IC: ${p.icNumber}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] bg-emerald-900/40 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40">Completed</span>
-              <p class="text-[10px] text-gray-400 mt-1">${p.completedAt}</p>
-            </div>
-          </div>
-        `).join('');
+        document.getElementById('ticket-card-number').innerText = '---';
+        document.getElementById('ticket-card-name').innerText = 'No ticket issued';
+        document.getElementById('ticket-card-ic').innerText = 'Please register on the left form';
+        document.getElementById('ticket-card-time').innerText = '--:--';
+        document.getElementById('ticket-card-pos').innerText = '--';
       }
     }
 
