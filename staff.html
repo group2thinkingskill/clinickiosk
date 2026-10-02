@@ -47,7 +47,6 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     <div><h1>Staff Control Panel</h1><span class="sub">Mini Clinic — POLIMAS</span></div>
   </div>
 
-  <!-- CURRENTLY SERVING CARD -->
   <div class="card">
     <div class="section-title"><span>Currently Serving</span><span id="queueCountBadge" class="badge">0 waiting</span></div>
     <div class="serving-box">
@@ -60,7 +59,6 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     </div>
   </div>
 
-  <!-- WAITING QUEUE LIST -->
   <div class="card">
     <div class="section-title">Waiting Queue Line</div>
     <div style="overflow-x:auto;">
@@ -80,7 +78,6 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     </div>
   </div>
 
-  <!-- DAILY REGISTRY LOG -->
   <div class="card">
     <div class="section-title">
       <span>Daily Patient Registry Log</span>
@@ -124,8 +121,38 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
   let ticketsList = [];
   let registryList = [];
   let servingCreatedAt = null;
+  let audioCtx = null;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
+
+  function initAudio(){
+    try {
+      if(!audioCtx){
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
+      }
+      if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch(e) {}
+  }
+
+  // Soft single beep chime (only plays selectively so it's not annoying)
+  function playSoftBeep(){
+    try {
+      initAudio();
+      if(!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now); // D5 note
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } catch(e){}
+  }
 
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
@@ -142,10 +169,8 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
   function renderStaff(){
     const waiting = servingCreatedAt ? ticketsList.filter(t => t.createdAt > servingCreatedAt) : ticketsList;
     
-    // Badge update
     document.getElementById('queueCountBadge').textContent = waiting.length + (waiting.length === 1 ? ' waiting' : ' waiting');
 
-    // Currently serving display
     const numEl = document.getElementById('currentServingNum');
     const detailsEl = document.getElementById('currentServingDetails');
 
@@ -162,7 +187,6 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
       detailsEl.textContent = waiting.length > 0 ? 'Ready to call next patient' : 'No patients currently in queue';
     }
 
-    // Waiting Queue Table
     const waitingBody = document.getElementById('waitingQueueBody');
     if (waiting.length === 0) {
       waitingBody.innerHTML = `<tr><td colspan="4" class="empty-row">No patients waiting in line</td></tr>`;
@@ -177,7 +201,6 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
       `).join('');
     }
 
-    // Registry Log Table
     const regBody = document.getElementById('registryBody');
     if (registryList.length === 0) {
       regBody.innerHTML = `<tr><td colspan="4" class="empty-row">No patients registered today</td></tr>`;
@@ -193,8 +216,9 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     }
   }
 
-  // Call Next Patient Function
+  // Call Next Patient
   document.getElementById('callNextBtn').onclick = () => {
+    initAudio();
     const waiting = servingCreatedAt ? ticketsList.filter(t => t.createdAt > servingCreatedAt) : ticketsList;
     if(waiting.length === 0){
       alert('No patients waiting in queue!');
@@ -204,7 +228,12 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     const nextPatient = waiting[0];
     const now = Date.now();
 
-    // Archive to registry log before advancing
+    // Check total called count to beep only after every 2 calls to prevent irritation
+    const totalCalledCount = registryList.length + 1;
+    if (totalCalledCount % 2 === 0) {
+      playSoftBeep();
+    }
+
     const regId = 'reg_' + nextPatient.id;
     const regUpdates = {};
     regUpdates['registry/' + regId] = {
@@ -218,9 +247,12 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
   };
 
   window.callSpecific = (ticketId) => {
+    initAudio();
     const target = ticketsList.find(t => t.id === ticketId);
     if (!target) return;
     const now = Date.now();
+
+    playSoftBeep();
 
     const regId = 'reg_' + target.id;
     const regUpdates = {};
@@ -234,19 +266,23 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     db.ref().update(regUpdates);
   };
 
-  // CLEAR ACTIVE QUEUE ONLY (Leaves Daily Registry Intact!)
+  // Clear Active Queue ONLY (Preserves 'lastSequence' counter so numbers won't reset to A001!)
   document.getElementById('clearActiveQueueBtn').onclick = () => {
-    if(confirm('Are you sure you want to clear the active queue and reset current serving? (Your daily history log will remain safe).')){
+    if(confirm('Are you sure you want to clear the active queue? (Your daily history log will remain safe, and sequence numbering will continue properly).')){
       db.ref('tickets').remove();
       db.ref('servingCreatedAt').remove();
       db.ref('servingStartedAt').remove();
     }
   };
 
-  // RESET DAILY REGISTRY ONLY
+  // Reset Daily Registry (Only this fully wipes the sequence counter for a fresh day)
   document.getElementById('resetRegistryBtn').onclick = () => {
-    if(confirm('Are you sure you want to clear the entire daily registry log?')){
+    if(confirm('Are you sure you want to clear the entire daily registry log and reset sequence numbers back to A001?')){
       db.ref('registry').remove();
+      db.ref('lastSequence').remove();
+      db.ref('tickets').remove();
+      db.ref('servingCreatedAt').remove();
+      db.ref('servingStartedAt').remove();
     }
   };
 </script>
