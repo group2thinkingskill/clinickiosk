@@ -22,7 +22,7 @@
 *{box-sizing:border-box;}
 body{margin:0; min-height:100vh; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,sans-serif;}
 .wrap{max-width:720px; margin:0 auto; padding:28px 20px 48px;}
-.brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
+.brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;}
 .brand-title{display:flex; align-items:center; gap:10px;}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;}
 .brand .mark svg{width:18px;height:18px;}
@@ -41,18 +41,17 @@ button.primary:hover{background:var(--teal-deep);}
 button.danger{padding:12px 18px;border:none;border-radius:10px;background:var(--coral);color:#fff;font:inherit;font-weight:600;font-size:.95rem;cursor:pointer;}
 button.ghost{background:none;border:1px solid var(--line);color:var(--ink-soft);font:inherit;font-size:.85rem;border-radius:8px;padding:8px 12px;cursor:pointer;}
 
-/* SEARCH BOX STYLES */
 .search-container{margin-bottom:20px;}
 .search-input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);font:inherit;font-size:.95rem;}
 .search-input:focus{outline:2px solid var(--teal);outline-offset:1px;}
 
-.section-title{font-size:1rem;font-weight:700;color:var(--teal);margin:24px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+.section-title{font-size:1rem;font-weight:700;color:var(--teal);margin:24px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;}
 .date-badge{font-size:.75rem;background:var(--teal);color:#fff;padding:2px 8px;border-radius:12px;font-weight:500;}
 
 .queue-list{list-style:none;padding:0;margin:0;}
-.queue-item{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.queue-item{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .queue-item .t-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:1.1rem;color:var(--teal);}
-.queue-item .t-details{flex:1;margin-left:14px;}
+.queue-item .t-details{flex:1;}
 .queue-item .t-name{font-weight:600;font-size:.95rem;}
 .queue-item .t-id{font-size:.8rem;color:var(--ink-soft);}
 .queue-item .t-time{font-size:.75rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
@@ -70,15 +69,15 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
       <div><h1>Staff Control Panel</h1><span class="sub">Mini Clinic — Doctor Console</span></div>
     </div>
-    <button class="ghost" id="resetBtn">Reset All Queue</button>
+    <button class="ghost" id="resetBtn">Reset Active Queue</button>
   </div>
 
-  <!-- SEARCH BOX -->
+  <!-- SEARCH BAR -->
   <div class="search-container">
-    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search patient by Name or ID Number..." autocomplete="off">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search patient by Name or IC Number..." autocomplete="off">
   </div>
 
-  <!-- CURRENTLY SERVING CARD -->
+  <!-- CURRENTLY SERVING -->
   <div class="card">
     <div class="label">Currently Serving</div>
     <div id="servingBox">
@@ -91,19 +90,19 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     </div>
   </div>
 
-  <!-- SEARCH RESULTS SECTION (Visible only when searching) -->
+  <!-- SEARCH RESULTS -->
   <div id="searchSection" style="display:none;">
     <div class="section-title">Search Results <span class="date-badge" id="searchCount">0 found</span></div>
     <ul class="queue-list" id="searchResultsList"></ul>
   </div>
 
-  <!-- WAITING QUEUE SECTION -->
+  <!-- WAITING PATIENTS -->
   <div id="activeQueueSection">
     <div class="section-title">Waiting Patients (<span id="waitingCount">0</span>)</div>
     <ul class="queue-list" id="waitingList"></ul>
   </div>
 
-  <!-- DYNAMIC LOGS BY DATE SECTION -->
+  <!-- REAL-TIME LOGS BY DATE -->
   <div id="logsContainer"></div>
 
   <footer id="statusNote">Connected to live system</footer>
@@ -130,6 +129,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let ticketsList = [];
   let historyList = [];
   let servingCreatedAt = null;
+  let dataServingStartedAt = null;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
@@ -170,12 +170,12 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       servingBox.innerHTML = `
         <div class="num">${fmt(getTicketNum(currentServingTicket))}</div>
         <div class="patient-info">${currentServingTicket.name || 'Anonymous'}</div>
-        <div class="patient-meta">ID: ${currentServingTicket.idNumber || 'N/A'} • Called at ${formatTime(dataServingStartedAt || currentServingTicket.createdAt)}</div>
+        <div class="patient-meta">IC: ${currentServingTicket.idNumber || 'N/A'} • Called at ${formatTime(dataServingStartedAt || currentServingTicket.createdAt)}</div>
       `;
     } else {
       servingBox.innerHTML = `
         <div class="num" style="color:var(--ink-soft)">— — —</div>
-        <div class="patient-info" style="color:var(--ink-soft)">No patient called</div>
+        <div class="patient-info" style="color:var(--ink-soft)">No patient currently called</div>
       `;
     }
 
@@ -211,7 +211,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
             <div class="t-num">${fmt(getTicketNum(t))}</div>
             <div class="t-details">
               <div class="t-name">${t.name}</div>
-              <div class="t-id">ID: ${t.idNumber}</div>
+              <div class="t-id">IC: ${t.idNumber}</div>
             </div>
             <div style="text-align:right;">
               <span class="status-pill ${t.isHistory ? 'done' : ''}">${t.isHistory ? 'Completed' : 'In Queue'}</span>
@@ -244,14 +244,14 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
           <div class="t-num">${fmt(getTicketNum(t))}</div>
           <div class="t-details">
             <div class="t-name">${t.name}</div>
-            <div class="t-id">ID: ${t.idNumber}</div>
+            <div class="t-id">IC: ${t.idNumber}</div>
           </div>
           <div class="t-time">${formatTime(t.createdAt)}</div>
         </li>
       `).join('');
     }
 
-    // 4. DYNAMIC DATE-BASED LOGS
+    // 4. REAL-TIME DYNAMIC DATE LOGS
     logsContainer.innerHTML = '';
 
     if (historyList.length === 0) {
@@ -260,7 +260,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         <div class="empty-msg">No completed patients recorded yet</div>
       `;
     } else {
-      // Group history items by Date Key (YYYY-MM-DD)
+      // Group completed history by date
       const grouped = {};
       historyList.forEach(item => {
         const ts = item.completedAt || item.createdAt;
@@ -274,7 +274,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         grouped[dateKey].items.push(item);
       });
 
-      // Sort dates descending (newest dates top)
       const sortedDates = Object.keys(grouped).sort().reverse();
 
       sortedDates.forEach(dateKey => {
@@ -291,7 +290,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
                 <div class="t-num" style="color:var(--ink-soft);">${fmt(getTicketNum(t))}</div>
                 <div class="t-details">
                   <div class="t-name">${t.name}</div>
-                  <div class="t-id">ID: ${t.idNumber}</div>
+                  <div class="t-id">IC: ${t.idNumber}</div>
                 </div>
                 <div style="text-align:right;">
                   <span class="status-pill done">Completed</span>
@@ -305,8 +304,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       });
     }
   }
-
-  let dataServingStartedAt = null;
 
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
@@ -323,7 +320,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   document.getElementById('searchInput').addEventListener('input', render);
 
-  // CALL NEXT PATIENT BUTTON
+  // CALL NEXT PATIENT (Automatically completes current patient if currently serving)
   document.getElementById('nextBtn').onclick = () => {
     const waiting = servingCreatedAt 
       ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
@@ -334,17 +331,27 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       return;
     }
 
-    const nextPatient = waiting[0];
     const now = Date.now();
 
-    // Reset timer back to 0 for new patient
+    // 1. If someone is currently being served, mark them completed and move to history
+    if (servingCreatedAt) {
+      const currentTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
+      if (currentTicket) {
+        const completedTicket = { ...currentTicket, completedAt: now };
+        db.ref('history/' + currentTicket.id).set(completedTicket);
+        db.ref('tickets/' + currentTicket.id).remove();
+      }
+    }
+
+    // 2. Call the next patient
+    const nextPatient = waiting[0];
     db.ref().update({
       servingCreatedAt: nextPatient.createdAt,
       servingStartedAt: now
     });
   };
 
-  // COMPLETE PATIENT BUTTON
+  // FINISH / MARK DONE BUTTON
   document.getElementById('completeBtn').onclick = () => {
     if (!servingCreatedAt) {
       alert("No patient currently being served.");
@@ -358,8 +365,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         completedAt: Date.now()
       };
 
-      // Save to history log and clear current serving pointer
+      // Save to history log, remove from active tickets, and clear serving state
       db.ref('history/' + currentTicket.id).set(completedTicket);
+      db.ref('tickets/' + currentTicket.id).remove();
       db.ref('servingCreatedAt').remove();
       db.ref('servingStartedAt').remove();
     }
@@ -367,7 +375,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   // RESET ALL QUEUE BUTTON
   document.getElementById('resetBtn').onclick = () => {
-    if (confirm("Are you sure you want to reset the active queue? History logs will remain safe.")) {
+    if (confirm("Are you sure you want to reset active queue? Completed patient history logs will remain safe.")) {
       db.ref('tickets').remove();
       db.ref('servingCreatedAt').remove();
       db.ref('servingStartedAt').remove();
