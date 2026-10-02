@@ -195,12 +195,16 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
+  // FIX: Reads explicit saved ticket number from Firebase instead of dynamic array re-indexing
   function getTicketNumber(t){
-    if(!t) return 1;
+    if(!t) return 'A001';
+    if(t.ticketNumber) return t.ticketNumber;
+    if(t.ticketSeq) return fmt(t.ticketSeq);
+
     const idx = ticketsList.findIndex(x => x.id === t.id);
-    if(idx !== -1) return idx + 1;
+    if(idx !== -1) return fmt(idx + 1);
     const countBefore = ticketsList.filter(x => x.createdAt < t.createdAt).length;
-    return countBefore + 1;
+    return fmt(countBefore + 1);
   }
 
   function getWaitingTickets(){
@@ -208,11 +212,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     return ticketsList.filter(t => t.createdAt > servingCreatedAt);
   }
 
-  // ACCURATE 1-MINUTE DYNAMIC QUEUE CALCULATION
   function calculateEstWaitMinutes(mine){
     if(!mine) return 0;
     
-    // If ticket is currently inside with doctor
     if (servingCreatedAt && mine.createdAt === servingCreatedAt) {
       return 0;
     }
@@ -221,15 +223,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
 
     if (!servingCreatedAt) {
-      // Doctor hasn't called anyone into consultation room yet
-      // 1st person (0 ahead) -> 1 min
-      // 2nd person (1 ahead) -> 2 mins
       return (aheadCount + 1) * 1;
     } else {
-      // Doctor is actively seeing a patient
       const callTime = servingStartedAt || servingCreatedAt;
       const elapsedMs = Math.max(0, Date.now() - callTime);
-      const extraMins = Math.floor(elapsedMs / 60000); // Loops +1 min for every full 60 seconds elapsed
+      const extraMins = Math.floor(elapsedMs / 60000);
       const currentPatientMins = 1 + extraMins;
 
       return currentPatientMins + (aheadCount * 1);
@@ -278,7 +276,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       takeSection.style.display = 'block';
     } else {
       const patientName = mine.name ? mine.name : 'Patient';
-      const ticketStr = fmt(getTicketNumber(mine));
+      const ticketStr = getTicketNumber(mine);
       greetingHeader.textContent = `${greetingStr}, ${patientName}!`;
 
       let statusHtml;
@@ -350,7 +348,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     document.getElementById('modeNote').textContent = "Can't connect to live database.";
   });
 
-  // Re-evaluates wait time dynamically every 1s
   setInterval(() => {
     if (myTicket) render();
   }, 1000);
@@ -398,28 +395,44 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
     takeBtn.disabled = true;
 
-    const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-    const newTicket = {
-      id: ticketId,
-      name: nameVal,
-      idNumber: idVal,
-      createdAt: Date.now()
-    };
+    // FIX: Increment persistent Firebase dailyCounter atomically so sequence never resets
+    db.ref('dailyCounter').transaction((curr) => {
+      return (curr || 0) + 1;
+    }, (error, committed, snapshot) => {
+      if (error || !committed) {
+        takeBtn.disabled = false;
+        formErr.textContent = 'Failed to assign queue number. Please try again.';
+        return;
+      }
 
-    pendingSubmissionId = ticketId;
-    myTicket = newTicket;
-    saveMyTicket();
+      const seqNumber = snapshot.val();
+      const ticketNumStr = fmt(seqNumber);
+      const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
 
-    db.ref('tickets/' + ticketId).set(newTicket).then(() => {
-      takeBtn.disabled = false;
-      nameInput.value = '';
-      idInput.value = '';
-      pendingSubmissionId = null;
-      render();
-    }).catch(err => {
-      takeBtn.disabled = false;
-      pendingSubmissionId = null;
-      formErr.textContent = 'Failed to issue ticket. Please try again.';
+      const newTicket = {
+        id: ticketId,
+        ticketNumber: ticketNumStr,
+        ticketSeq: seqNumber,
+        name: nameVal,
+        idNumber: idVal,
+        createdAt: Date.now()
+      };
+
+      pendingSubmissionId = ticketId;
+      myTicket = newTicket;
+      saveMyTicket();
+
+      db.ref('tickets/' + ticketId).set(newTicket).then(() => {
+        takeBtn.disabled = false;
+        nameInput.value = '';
+        idInput.value = '';
+        pendingSubmissionId = null;
+        render();
+      }).catch(err => {
+        takeBtn.disabled = false;
+        pendingSubmissionId = null;
+        formErr.textContent = 'Failed to issue ticket. Please try again.';
+      });
     });
   };
 
@@ -427,16 +440,27 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   if (simBtn) {
     simBtn.onclick = () => {
       initAudio();
-      const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-      const names = ['Ahmad Sattiya', 'Shaarvesh Kumar', 'Lim Wei Ting', 'Muthusamy', 'Nur Aini', 'Chong Jin'];
-      const randomName = names[Math.floor(Math.random() * names.length)];
-      const randomIc = String(Math.floor(100000000000 + Math.random() * 900000000000));
-      
-      db.ref('tickets/' + simId).set({
-        id: simId,
-        name: randomName,
-        idNumber: randomIc,
-        createdAt: Date.now()
+
+      db.ref('dailyCounter').transaction((curr) => {
+        return (curr || 0) + 1;
+      }, (error, committed, snapshot) => {
+        if (!committed) return;
+
+        const seqNumber = snapshot.val();
+        const ticketNumStr = fmt(seqNumber);
+        const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        const names = ['Ahmad Sattiya', 'Shaarvesh Kumar', 'Lim Wei Ting', 'Muthusamy', 'Nur Aini', 'Chong Jin'];
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        const randomIc = String(Math.floor(100000000000 + Math.random() * 900000000000));
+        
+        db.ref('tickets/' + simId).set({
+          id: simId,
+          ticketNumber: ticketNumStr,
+          ticketSeq: seqNumber,
+          name: randomName,
+          idNumber: randomIc,
+          createdAt: Date.now()
+        });
       });
     };
   }
