@@ -21,10 +21,13 @@
 }
 body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,sans-serif;}
 .wrap{max-width:520px; margin:0 auto; padding:28px 20px 48px;}
-.brand{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
+.brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
+.brand-left{display:flex; align-items:center; gap:10px;}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;}
 .brand h1{font-size:1.15rem;font-weight:700;margin:0;}
 .brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;}
+.demo-badge{background:rgba(20,107,98,0.1);border:1px solid var(--teal);color:var(--teal);padding:6px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;}
+.demo-badge:active{background:rgba(20,107,98,0.25);}
 .greeting{font-size:1.1rem;font-weight:600;color:var(--teal);margin-bottom:12px;text-align:center;}
 .card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center;}
 .label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
@@ -36,8 +39,6 @@ body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-
 .status.now{color:var(--coral);font-weight:700;}
 button.primary{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
 button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;}
-button.simulate{margin-top:10px;width:100%;padding:10px;border:1px dashed var(--teal);border-radius:10px;background:rgba(20,107,98,0.06);color:var(--teal);font:inherit;font-weight:600;font-size:.85rem;cursor:pointer;}
-button.simulate:active{background:rgba(20,107,98,0.18);}
 .field{text-align:left;margin-bottom:14px;}
 .fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
 .idInput{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.95rem;}
@@ -49,8 +50,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 <body>
 <div class="wrap">
   <div class="brand">
-    <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
-    <div><h1>Queue System</h1><span class="sub">Mini Clinic — Patient Kiosk</span></div>
+    <div class="brand-left">
+      <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+      <div><h1>Queue System</h1><span class="sub">Mini Clinic — Patient Kiosk</span></div>
+    </div>
+    <button class="demo-badge" id="topSimulateBtn">⚡ Simulate Alert</button>
   </div>
 
   <div id="greetingHeader" class="greeting"></div>
@@ -96,7 +100,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let myTicket = null;
   let audioCtx = null;
   let lastPlayedTurnKey = null;
-  let isSimulatedTurn = false; // toggle for prototype demo mode
+  let isSimulatedTurn = false;
 
   function initAudio(){
     try {
@@ -118,8 +122,8 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       const osc1 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'square';
-      osc1.frequency.setValueAtTime(880, now); // A5 note
-      gain1.gain.setValueAtTime(1.0, now); // MAX VOLUME
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(1.0, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc1.connect(gain1);
       gain1.connect(audioCtx.destination);
@@ -129,8 +133,8 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       const osc2 = audioCtx.createOscillator();
       const gain2 = audioCtx.createGain();
       osc2.type = 'square';
-      osc2.frequency.setValueAtTime(1174.66, now + 0.4); // D6 note
-      gain2.gain.setValueAtTime(1.0, now + 0.4); // MAX VOLUME
+      osc2.frequency.setValueAtTime(1174.66, now + 0.4);
+      gain2.gain.setValueAtTime(1.0, now + 0.4);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
       osc2.connect(gain2);
       gain2.connect(audioCtx.destination);
@@ -209,16 +213,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         <div class="num">${ticketStr}</div>
         <div class="seam"></div>
         ${statusHtml}
-        <button class="simulate" id="simulateBtn">⚡ Simulate Turn Alert (Demo)</button>
-        <button class="ghost" id="newTicketBtn" style="margin-top:12px;display:inline-block;font-weight:600;">Done / Get a new number</button>
+        <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
       `;
       takeSection.style.display = 'none';
-
-      document.getElementById('simulateBtn').onclick = () => {
-        initAudio();
-        isSimulatedTurn = true;
-        render();
-      };
 
       document.getElementById('newTicketBtn').onclick = () => {
         clearMyTicket();
@@ -226,6 +223,19 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       };
     }
   }
+
+  // Global simulation button trigger
+  document.getElementById('topSimulateBtn').onclick = () => {
+    initAudio();
+    isSimulatedTurn = true;
+    playTurnAlarm();
+    
+    // If no ticket exists yet when clicked, automatically assign a dummy ticket so the card lights up nicely!
+    if(!myTicket){
+      myTicket = { id: 'sim_123', ticketNumber: 'A001', createdAt: Date.now() };
+    }
+    render();
+  };
 
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
