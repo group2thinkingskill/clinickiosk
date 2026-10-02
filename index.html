@@ -208,21 +208,25 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     return ticketsList.filter(t => t.createdAt > servingCreatedAt);
   }
 
+  // 1-MINUTE DYNAMIC LOOP LOGIC
   function calculateEstWaitMinutes(mine){
     if(!mine) return 0;
     
     const w = getWaitingTickets();
     const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
     
+    // Base time: 1 minute for each patient ahead in line
     let totalMins = aheadCount * 1;
 
+    // Calculate time for currently served patient
     if(servingCreatedAt && mine.createdAt > servingCreatedAt){
       const callTime = servingStartedAt || servingCreatedAt;
       const elapsedMs = Math.max(0, Date.now() - callTime);
-      const elapsedMins = Math.floor(elapsedMs / 60000);
+      const extraMins = Math.floor(elapsedMs / 60000); // Loops +1 min every full 60 seconds
 
-      const currentPatientEstimate = 1 + elapsedMins;
-      totalMins += currentPatientEstimate;
+      totalMins += (1 + extraMins);
+    } else if (!servingCreatedAt && aheadCount === 0) {
+      totalMins = 1;
     }
 
     return totalMins;
@@ -271,7 +275,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } else {
       const patientName = mine.name ? mine.name : 'Patient';
       const ticketStr = fmt(getTicketNumber(mine));
-      greetingHeader.textContent = `${greetingStr},${patientName}!`;
+      greetingHeader.textContent = `${greetingStr}, ${patientName}!`;
 
       let statusHtml;
       let estWaitHtml = "";
@@ -295,11 +299,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         lastAheadCount = ahead;
 
         const estMins = calculateEstWaitMinutes(mine);
-        estWaitHtml = `<div class="est-box">⏱️ Est. Wait Time: <span>~${estMins}${estMins === 1 ? 'min' : 'mins'}</span></div>`;
+        estWaitHtml = `<div class="est-box">⏱️ Est. Wait Time: <span>~${estMins} ${estMins === 1 ? 'min' : 'mins'}</span></div>`;
 
         statusHtml = ahead === 0
           ? `<div class="status">You're next — please wait nearby</div>`
-          : `<div class="status">${ahead}${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
+          : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
       }
 
       card.innerHTML = `
@@ -342,9 +346,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     document.getElementById('modeNote').textContent = "Can't connect to live database.";
   });
 
+  // Refreshes every 1 second to increment wait time continuously as minutes pass
   setInterval(() => {
     if (myTicket) render();
-  }, 3000);
+  }, 1000);
 
   const nameInput = document.getElementById('nameInput');
   const idInput = document.getElementById('idInput');
