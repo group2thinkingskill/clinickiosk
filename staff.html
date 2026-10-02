@@ -27,7 +27,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
 *{box-sizing:border-box;}
 body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;}
-.wrap{max-width:760px; margin:0 auto; padding:28px 20px 48px;}
+.wrap{max-width:800px; margin:0 auto; padding:28px 20px 48px;}
 .brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
 .brand-left{display:flex; align-items:center; gap:10px;}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;}
@@ -56,9 +56,9 @@ button.danger{padding:12px 16px; border:none; border-radius:10px; background:var
 button.ghost{background:none; border:none; color:var(--ink-soft); font:inherit; font-size:.85rem; text-decoration:underline; cursor:pointer; padding:4px;}
 
 .table-wrap{margin-top:14px; overflow-x:auto;}
-table{width:100%; border-collapse:collapse; font-size:.88rem; text-align:left;}
-th{font-size:.7rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.08em; padding:10px; border-bottom:1px solid var(--line);}
-td{padding:12px 10px; border-bottom:1px solid var(--line);}
+table{width:100%; border-collapse:collapse; font-size:.88rem; text-align:left; white-space:nowrap;}
+th{font-size:.7rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.08em; padding:10px 12px; border-bottom:1px solid var(--line);}
+td{padding:12px; border-bottom:1px solid var(--line);}
 .mono{font-family:'IBM Plex Mono',monospace; font-weight:600;}
 .status-tag{padding:3px 8px; border-radius:6px; font-size:.75rem; font-weight:600; display:inline-block;}
 .tag-serving{background:rgba(201,68,48,0.15); color:var(--coral);}
@@ -83,7 +83,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   </div>
 
   <div class="grid">
-    <!-- 1. SEARCH BOX CARD (MOVED TO TOP) -->
+    <!-- 1. SEARCH BOX CARD (TOP) -->
     <div class="card">
       <div class="label">Patient Search & Lookup</div>
       <div class="search-box">
@@ -91,15 +91,15 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       </div>
 
       <div id="searchResultsArea" style="display:none; margin-top:16px;">
-        <div style="font-size:.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;">Search Results & Registered Info</div>
+        <div style="font-size:.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;">Search Results</div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Ticket</th>
-                <th>Full Name</th>
+                <th>Queue No.</th>
+                <th>Patient Name</th>
                 <th>IC Number</th>
-                <th>Registered Date & Time</th>
+                <th>Reg. Time</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -124,7 +124,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       </div>
     </div>
 
-    <!-- 3. UPCOMING QUEUE CARD -->
+    <!-- 3. UPCOMING QUEUE CARD WITH 4 COLUMNS -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div class="label" style="margin:0;">Upcoming Patients (<span id="waitingCount">0</span>)</div>
@@ -135,19 +135,20 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
         <table>
           <thead>
             <tr>
-              <th>Ticket</th>
+              <th>Queue No.</th>
               <th>Patient Name</th>
               <th>IC Number</th>
+              <th>Reg. Time</th>
             </tr>
           </thead>
           <tbody id="queueTableBody">
-            <tr><td colspan="3" style="text-align:center; color:var(--ink-soft);">No patients waiting</td></tr>
+            <tr><td colspan="4" style="text-align:center; color:var(--ink-soft);">No patients waiting</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- 4. DAILY PATIENT LOG COUNTER (MOVED TO BOTTOM) -->
+    <!-- 4. DAILY PATIENT LOG COUNTER (BOTTOM) -->
     <div class="stats-bar">
       <div>Total Patients Registered Today: <span class="stats-count" id="todayCount">0</span></div>
       <span class="date-tag" id="currentDateStr">(---)</span>
@@ -185,11 +186,17 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
     return idx !== -1 ? idx + 1 : 1;
   }
 
+  function formatTimeOnly(ts){
+    if(!ts) return '-';
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
   function formatFullDateTime(ts){
     if(!ts) return '-';
     const d = new Date(ts);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + 
-           d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + 
+           d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   function getFormattedTodayDate(){
@@ -198,7 +205,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   }
 
   function renderStaff(){
-    // Currently Serving
+    // Currently Serving Card
     const servingTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
     const servingNumEl = document.getElementById('servingNum');
     const servingDetails = document.getElementById('servingDetails');
@@ -218,7 +225,7 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
       completeBtn.style.display = 'none';
     }
 
-    // Upcoming Waiting Queue
+    // Upcoming Waiting Queue (4 columns: Queue No, Name, IC Number, Reg Time)
     const waitingTickets = servingCreatedAt 
       ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
       : ticketsList;
@@ -227,13 +234,14 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
 
     const tbody = document.getElementById('queueTableBody');
     if (waitingTickets.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--ink-soft); padding:18px;">No patients waiting</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-soft); padding:18px;">No patients waiting</td></tr>';
     } else {
       tbody.innerHTML = waitingTickets.map(t => `
         <tr>
           <td class="mono">${fmt(getTicketNumber(t))}</td>
           <td><strong>${t.name || 'Anonymous'}</strong></td>
           <td class="mono" style="color:var(--ink-soft);">${t.idNumber || '-'}</td>
+          <td class="mono" style="color:var(--ink-soft);">${formatTimeOnly(t.createdAt)}</td>
         </tr>
       `).join('');
     }
