@@ -208,23 +208,19 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     return ticketsList.filter(t => t.createdAt > servingCreatedAt);
   }
 
-  // DYNAMIC INCREMENTING WAIT TIME LOGIC
   function calculateEstWaitMinutes(mine){
     if(!mine) return 0;
     
     const w = getWaitingTickets();
     const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
     
-    // 1 minute standard allocation for each waiting patient ahead
     let totalMins = aheadCount * 1;
 
-    // Time for current patient inside the consultation room
     if(servingCreatedAt && mine.createdAt > servingCreatedAt){
       const callTime = servingStartedAt || servingCreatedAt;
       const elapsedMs = Math.max(0, Date.now() - callTime);
       const elapsedMins = Math.floor(elapsedMs / 60000);
 
-      // Base 1 min + 1 extra minute for every full minute elapsed overtime
       const currentPatientEstimate = 1 + elapsedMins;
       totalMins += currentPatientEstimate;
     }
@@ -275,7 +271,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } else {
       const patientName = mine.name ? mine.name : 'Patient';
       const ticketStr = fmt(getTicketNumber(mine));
-      greetingHeader.textContent = `${greetingStr}, ${patientName}!`;
+      greetingHeader.textContent = `${greetingStr},${patientName}!`;
 
       let statusHtml;
       let estWaitHtml = "";
@@ -299,19 +295,18 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         lastAheadCount = ahead;
 
         const estMins = calculateEstWaitMinutes(mine);
-        estWaitHtml = `<div class="est-box">⏱️ Est. Wait Time: <span>~${estMins} ${estMins === 1 ? 'min' : 'mins'}</span></div>`;
+        estWaitHtml = `<div class="est-box">⏱️ Est. Wait Time: <span>~${estMins}${estMins === 1 ? 'min' : 'mins'}</span></div>`;
 
         statusHtml = ahead === 0
           ? `<div class="status">You're next — please wait nearby</div>`
-          : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
+          : `<div class="status">${ahead}${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
       }
 
       card.innerHTML = `
         <div class="label">Your ticket number</div>
         <div class="num">${ticketStr}</div>
         <div class="seam"></div>
-        ${statusHtml}
-        ${estWaitHtml}
+        ${statusHtml}${estWaitHtml}
         <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
       `;
       takeSection.style.display = 'none';
@@ -347,7 +342,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     document.getElementById('modeNote').textContent = "Can't connect to live database.";
   });
 
-  // Re-render every 3 seconds to increment timer dynamically as time elapses
   setInterval(() => {
     if (myTicket) render();
   }, 3000);
@@ -362,7 +356,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
   });
 
-  // Strict 12-digit digits-only filter
   idInput.addEventListener('input', e => {
     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 12);
     formErr.textContent = '';
@@ -387,7 +380,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       return; 
     }
 
-    // Explicit 12-digit Malaysian IC check
     if(idVal.length !== 12 || !/^\d{12}$/.test(idVal)){
       formErr.textContent = 'IC number must be exactly 12 digits (e.g. 020512085432)';
       idInput.focus();
@@ -407,45 +399,38 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
     pendingSubmissionId = ticketId;
     myTicket = newTicket;
-    hasAlertedForCurrentTurn = false;
-    lastAheadCount = null;
     saveMyTicket();
-    render();
 
     db.ref('tickets/' + ticketId).set(newTicket).then(() => {
-      pendingSubmissionId = null;
+      takeBtn.disabled = false;
       nameInput.value = '';
       idInput.value = '';
-      takeBtn.disabled = false;
-    }).catch((err) => {
       pendingSubmissionId = null;
-      clearMyTicket();
-      takeBtn.disabled = false;
-      formErr.textContent = "Error issuing ticket. Try again.";
       render();
+    }).catch(err => {
+      takeBtn.disabled = false;
+      pendingSubmissionId = null;
+      formErr.textContent = 'Failed to issue ticket. Please try again.';
     });
   };
 
-  document.getElementById('simBtn').onclick = (e) => {
-    if(e) e.preventDefault();
-    initAudio();
-    const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-    const sampleNames = ["Ali Hassan", "Siti Nurhaliza", "Tan Wei Ming", "Muthu Raman", "Ahmad Zaki"];
-    const simTicket = {
-      id: simId,
-      name: sampleNames[Math.floor(Math.random() * sampleNames.length)],
-      idNumber: "0" + String(Math.floor(10000000001 + Math.random() * 89999999999)),
-      createdAt: Date.now()
+  const simBtn = document.getElementById('simBtn');
+  if (simBtn) {
+    simBtn.onclick = () => {
+      initAudio();
+      const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const names = ['Ahmad Sattiya', 'Shaarvesh Kumar', 'Lim Wei Ting', 'Muthusamy', 'Nur Aini', 'Chong Jin'];
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      const randomIc = String(Math.floor(100000000000 + Math.random() * 900000000000));
+      
+      db.ref('tickets/' + simId).set({
+        id: simId,
+        name: randomName,
+        idNumber: randomIc,
+        createdAt: Date.now()
+      });
     };
-    db.ref('tickets/' + simId).set(simTicket);
-  };
-
-  idInput.addEventListener('keydown', e => { 
-    if(e.key === 'Enter') takeBtn.click(); 
-  });
-
-  document.addEventListener('touchstart', () => { initAudio(); }, { once: true });
-  document.addEventListener('click', () => { initAudio(); }, { once: true });
+  }
 
   loadMyTicket();
 </script>
