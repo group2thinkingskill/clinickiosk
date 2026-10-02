@@ -54,7 +54,7 @@ button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);f
 .fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
 .idInput{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.95rem;}
 .idInput:focus{outline:2px solid var(--teal);outline-offset:1px;}
-.fieldErr{color:var(--coral);font-size:.8rem;margin-top:6px;min-height:1em;}
+.fieldErr{color:var(--coral);font-size:.8rem;margin-top:6px;min-height:1em;font-weight:500;}
 .empty{color:var(--ink-soft);font-size:.9rem;margin-top:18px;}
 footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;}
 .dev-tools{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line);display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
@@ -74,11 +74,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     <div id="takeSection">
       <div class="field">
         <label for="nameInput" class="fieldLabel">Full Name (Letters Only)</label>
-        <input type="text" id="nameInput" class="idInput" placeholder="e.g. John Doe" autocomplete="off">
+        <input type="text" id="nameInput" class="idInput" placeholder="e.g. Ahmad Sattiya" autocomplete="off">
       </div>
       <div class="field">
-        <label for="idInput" class="fieldLabel">Identification Number (Digits Only)</label>
-        <input type="text" id="idInput" class="idInput" placeholder="e.g. 102030" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+        <label for="idInput" class="fieldLabel">Malaysian IC Number (12 Digits Only)</label>
+        <input type="text" id="idInput" class="idInput" placeholder="e.g. 020512085432" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off">
         <div class="fieldErr" id="formErr"></div>
       </div>
       <button class="primary" id="takeBtn">Take a queue number</button>
@@ -113,6 +113,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   let ticketsList = [];
   let servingCreatedAt = null;
+  let servingStartedAt = null;
   let myTicket = null;
   let pendingSubmissionId = null;
   
@@ -140,7 +141,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
-  // SOUND 1: Alert Chime (2-note chime when queue moves)
   function playAlertChime(){
     try {
       initAudio();
@@ -171,7 +171,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e){}
   }
 
-  // SOUND 2: Grand Turn Chime (4-note fanfare when IT'S YOUR TURN)
   function playTurnChime(){
     try {
       initAudio();
@@ -209,33 +208,25 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     return ticketsList.filter(t => t.createdAt > servingCreatedAt);
   }
 
-  // ESTIMATED WAIT TIME CALCULATION FOR PRESENTATION DEMO
-  // Base: 1 minute per person ahead.
-  // Overtime: If current patient exceeds 1 min, add +1 min continuously.
+  // DYNAMIC INCREMENTING WAIT TIME LOGIC
   function calculateEstWaitMinutes(mine){
     if(!mine) return 0;
     
     const w = getWaitingTickets();
     const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
     
-    // 1 minute allocated per person ahead
+    // 1 minute standard allocation for each waiting patient ahead
     let totalMins = aheadCount * 1;
 
+    // Time for current patient inside the consultation room
     if(servingCreatedAt && mine.createdAt > servingCreatedAt){
-      const elapsedMs = Date.now() - servingCreatedAt;
+      const callTime = servingStartedAt || servingCreatedAt;
+      const elapsedMs = Math.max(0, Date.now() - callTime);
       const elapsedMins = Math.floor(elapsedMs / 60000);
 
-      let currentPatientRem = 0;
-      if (elapsedMins < 1) {
-        currentPatientRem = 1 - elapsedMins;
-      } else {
-        // Exceeded 1 minute -> add 1 minute chunks recursively
-        const overtimeMins = elapsedMins - 1;
-        const extraChunks = Math.floor(overtimeMins / 1) + 1;
-        const totalAllocated = 1 + (extraChunks * 1);
-        currentPatientRem = totalAllocated - elapsedMins;
-      }
-      totalMins += Math.max(1, currentPatientRem);
+      // Base 1 min + 1 extra minute for every full minute elapsed overtime
+      const currentPatientEstimate = 1 + elapsedMins;
+      totalMins += currentPatientEstimate;
     }
 
     return totalMins;
@@ -341,6 +332,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     
     ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
     servingCreatedAt = data.servingCreatedAt || null;
+    servingStartedAt = data.servingStartedAt || null;
 
     if (myTicket) {
       const existsInDb = ticketsList.some(t => t.id === myTicket.id);
@@ -355,7 +347,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     document.getElementById('modeNote').textContent = "Can't connect to live database.";
   });
 
-  // Fast auto-refresh every 3 seconds for live presentation demo
+  // Re-render every 3 seconds to increment timer dynamically as time elapses
   setInterval(() => {
     if (myTicket) render();
   }, 3000);
@@ -370,8 +362,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
   });
 
+  // Strict 12-digit digits-only filter
   idInput.addEventListener('input', e => {
-    e.target.value = e.target.value.replace(/\D/g, '');
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 12);
     formErr.textContent = '';
   });
 
@@ -389,13 +382,14 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     }
 
     if(!idVal){ 
-      formErr.textContent = 'Please enter your identification number'; 
+      formErr.textContent = 'Please enter your Malaysian IC number'; 
       idInput.focus(); 
       return; 
     }
 
-    if(!/^\d+$/.test(idVal)){
-      formErr.textContent = 'ID must contain numbers only';
+    // Explicit 12-digit Malaysian IC check
+    if(idVal.length !== 12 || !/^\d{12}$/.test(idVal)){
+      formErr.textContent = 'IC number must be exactly 12 digits (e.g. 020512085432)';
       idInput.focus();
       return;
     }
@@ -440,7 +434,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     const simTicket = {
       id: simId,
       name: sampleNames[Math.floor(Math.random() * sampleNames.length)],
-      idNumber: String(Math.floor(10000 + Math.random() * 90000)),
+      idNumber: "0" + String(Math.floor(10000000001 + Math.random() * 89999999999)),
       createdAt: Date.now()
     };
     db.ref('tickets/' + simId).set(simTicket);
