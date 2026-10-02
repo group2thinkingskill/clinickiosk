@@ -121,38 +121,8 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
   let ticketsList = [];
   let registryList = [];
   let servingCreatedAt = null;
-  let audioCtx = null;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
-
-  function initAudio(){
-    try {
-      if(!audioCtx){
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) audioCtx = new AudioCtx();
-      }
-      if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    } catch(e) {}
-  }
-
-  // Soft single beep chime (only plays selectively so it's not annoying)
-  function playSoftBeep(){
-    try {
-      initAudio();
-      if(!audioCtx) return;
-      const now = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, now); // D5 note
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.4);
-    } catch(e){}
-  }
 
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
@@ -216,9 +186,7 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     }
   }
 
-  // Call Next Patient
   document.getElementById('callNextBtn').onclick = () => {
-    initAudio();
     const waiting = servingCreatedAt ? ticketsList.filter(t => t.createdAt > servingCreatedAt) : ticketsList;
     if(waiting.length === 0){
       alert('No patients waiting in queue!');
@@ -227,12 +195,6 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
 
     const nextPatient = waiting[0];
     const now = Date.now();
-
-    // Check total called count to beep only after every 2 calls to prevent irritation
-    const totalCalledCount = registryList.length + 1;
-    if (totalCalledCount % 2 === 0) {
-      playSoftBeep();
-    }
 
     const regId = 'reg_' + nextPatient.id;
     const regUpdates = {};
@@ -247,12 +209,9 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
   };
 
   window.callSpecific = (ticketId) => {
-    initAudio();
     const target = ticketsList.find(t => t.id === ticketId);
     if (!target) return;
     const now = Date.now();
-
-    playSoftBeep();
 
     const regId = 'reg_' + target.id;
     const regUpdates = {};
@@ -266,16 +225,14 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     db.ref().update(regUpdates);
   };
 
-  // Clear Active Queue ONLY (Preserves 'lastSequence' counter so numbers won't reset to A001!)
   document.getElementById('clearActiveQueueBtn').onclick = () => {
-    if(confirm('Are you sure you want to clear the active queue? (Your daily history log will remain safe, and sequence numbering will continue properly).')){
+    if(confirm('Are you sure you want to clear the active queue?')){
       db.ref('tickets').remove();
       db.ref('servingCreatedAt').remove();
       db.ref('servingStartedAt').remove();
     }
   };
 
-  // Reset Daily Registry (Only this fully wipes the sequence counter for a fresh day)
   document.getElementById('resetRegistryBtn').onclick = () => {
     if(confirm('Are you sure you want to clear the entire daily registry log and reset sequence numbers back to A001?')){
       db.ref('registry').remove();
