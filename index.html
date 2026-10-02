@@ -119,7 +119,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   
   let hasAlertedForCurrentTurn = false;
   let lastAheadCount = null;
-  
   let audioCtx = null;
 
   function getTimeGreeting(){
@@ -195,16 +194,23 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
-  // FIX: Reads explicit saved ticket number from Firebase instead of dynamic array re-indexing
+  // ABSOLUTE NON-INDEX TICKET NUMBER RESOLUTION
   function getTicketNumber(t){
     if(!t) return 'A001';
+    
+    // Priority 1: Direct permanent ticket number string
     if(t.ticketNumber) return t.ticketNumber;
+    
+    // Priority 2: Direct sequence integer
     if(t.ticketSeq) return fmt(t.ticketSeq);
 
-    const idx = ticketsList.findIndex(x => x.id === t.id);
-    if(idx !== -1) return fmt(idx + 1);
-    const countBefore = ticketsList.filter(x => x.createdAt < t.createdAt).length;
-    return fmt(countBefore + 1);
+    // Priority 3: Lookup matching record in Firebase active list
+    const found = ticketsList.find(x => x.id === t.id);
+    if(found && found.ticketNumber) return found.ticketNumber;
+    if(found && found.ticketSeq) return fmt(found.ticketSeq);
+
+    // Priority 4: Default safety wrapper (Never re-index by array length)
+    return 'A001';
   }
 
   function getWaitingTickets(){
@@ -268,7 +274,21 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     const card = document.getElementById('patientCard');
     const takeSection = document.getElementById('takeSection');
 
-    const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
+    // Merge local session state with live Firebase object
+    let mine = null;
+    if (myTicket) {
+      const dbMatch = ticketsList.find(x => x.id === myTicket.id);
+      if (dbMatch) {
+        mine = Object.assign({}, myTicket, dbMatch);
+        // Self-heal local storage if ticketNumber was missing
+        if (!myTicket.ticketNumber && dbMatch.ticketNumber) {
+          myTicket.ticketNumber = dbMatch.ticketNumber;
+          saveMyTicket();
+        }
+      } else {
+        mine = myTicket;
+      }
+    }
 
     if(!mine){
       greetingHeader.textContent = `${greetingStr}! Please check in below.`;
@@ -395,7 +415,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
     takeBtn.disabled = true;
 
-    // FIX: Increment persistent Firebase dailyCounter atomically so sequence never resets
+    // Increment global daily counter atomically
     db.ref('dailyCounter').transaction((curr) => {
       return (curr || 0) + 1;
     }, (error, committed, snapshot) => {
