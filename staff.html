@@ -9,177 +9,134 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#F6FAF9; --paper-2:#EAF2F0; --ink:#0F2A2E; --ink-soft:#4B6560;
-  --teal:#146B62; --teal-deep:#0C4A44; --coral:#C94430; --line:#CFE0DC;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
-    --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
-  }
-}
-:root[data-theme="dark"]{
   --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
   --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
+  --danger:#FF5252; --danger-hover:#D32F2F;
+  box-sizing:border-box;
 }
-html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
 *{box-sizing:border-box;}
-body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;}
-.wrap{max-width:840px; margin:0 auto; padding:28px 20px 48px;}
-.brand{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
-.brand-left{display:flex; align-items:center; gap:10px;}
+body{
+  margin:0; min-height:100vh; background:var(--paper); color:var(--ink);
+  font-family:'Space Grotesk',system-ui,-apple-system,sans-serif; padding:24px;
+}
+.wrap{max-width:840px; margin:0 auto;}
+.header-bar{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;}
+.brand{display:flex; align-items:center; gap:10px;}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;}
 .brand .mark svg{width:18px;height:18px;}
-.brand h1{font-size:1.15rem;font-weight:700;margin:0;letter-spacing:-0.01em;}
-.brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;margin-top:1px;}
-.badge{padding:4px 10px;border-radius:20px;background:var(--paper-2);border:1px solid var(--line);font-size:.75rem;font-weight:600;color:var(--teal);}
+.brand h1{font-size:1.15rem;font-weight:700;margin:0;}
+.brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;}
 
-.grid{display:grid; grid-template-columns:1fr; gap:20px;}
-.card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:24px;}
-.label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
-.num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:3rem;letter-spacing:.04em;line-height:1;}
-.patient-details{margin-top:12px;padding:12px;background:var(--paper);border-radius:8px;border:1px solid var(--line);}
-.patient-name{font-size:1.1rem;font-weight:700;color:var(--teal-deep);}
-.patient-ic{font-family:'IBM Plex Mono',monospace;font-size:.9rem;color:var(--ink-soft);margin-top:2px;}
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:24px;}
+.card-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+.card-title{font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin:0;font-weight:700;}
 
+/* Search */
 .search-box{position:relative;}
-.idInput{width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font:inherit; font-size:.95rem;}
-.idInput:focus{outline:2px solid var(--teal); outline-offset:1px;}
+.search-input{
+  width:100%; padding:14px 16px 14px 42px; border-radius:10px; border:1px solid var(--line);
+  background:var(--paper); color:var(--ink); font:inherit; font-size:.95rem;
+}
+.search-input:focus{outline:2px solid var(--teal); outline-offset:1px;}
+.search-icon{position:absolute; left:14px; top:50%; transform:translateY(-50%); opacity:0.6;}
 
-.btn-group{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
-button.primary{flex:1; min-width:140px; padding:12px 16px; border:none; border-radius:10px; background:var(--teal); color:#fff; font:inherit; font-weight:600; font-size:.95rem; cursor:pointer;}
-button.primary:active{background:var(--teal-deep);}
-button.primary:disabled{opacity:0.5; cursor:not-allowed;}
-button.danger{padding:12px 16px; border:none; border-radius:10px; background:var(--coral); color:#fff; font:inherit; font-weight:600; font-size:.95rem; cursor:pointer;}
-button.ghost{background:none; border:none; color:var(--ink-soft); font:inherit; font-size:.85rem; text-decoration:underline; cursor:pointer; padding:4px;}
+/* Currently Serving */
+.serving-box{text-align:center; padding:10px 0;}
+.serving-num{font-family:'IBM Plex Mono',monospace; font-size:4rem; font-weight:700; color:var(--coral); line-height:1; margin:10px 0;}
+.patient-details{background:rgba(20,107,98,0.12); border:1px solid var(--line); border-radius:10px; padding:14px; margin:16px 0;}
+.patient-name{font-size:1.2rem; font-weight:700; color:var(--teal-deep); margin-bottom:4px;}
+.patient-ic{font-family:'IBM Plex Mono',monospace; font-size:.9rem; color:var(--ink-soft);}
 
-.table-wrap{margin-top:14px; overflow-x:auto;}
-table{width:100%; border-collapse:collapse; font-size:.88rem; text-align:left; white-space:nowrap;}
-th{font-size:.7rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.08em; padding:10px 12px; border-bottom:1px solid var(--line);}
-td{padding:12px; border-bottom:1px solid var(--line);}
-.mono{font-family:'IBM Plex Mono',monospace; font-weight:600;}
-.status-tag{padding:3px 8px; border-radius:6px; font-size:.75rem; font-weight:600; display:inline-block;}
-.tag-serving{background:rgba(201,68,48,0.15); color:var(--coral);}
-.tag-waiting{background:rgba(20,107,98,0.15); color:var(--teal);}
-.tag-completed{background:rgba(75,101,96,0.15); color:var(--ink-soft);}
+.btn-group{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+button{
+  padding:14px; border:none; border-radius:10px; font:inherit; font-weight:700; font-size:1rem; cursor:pointer; transition:all 0.15s ease;
+}
+button.btn-call{background:var(--teal); color:#0E1B1A;}
+button.btn-call:hover{opacity:0.9;}
+button.btn-done{background:var(--coral); color:#fff;}
+button.btn-done:hover{opacity:0.9;}
+button:disabled{opacity:0.4; cursor:not-allowed;}
 
-.stats-bar{display:flex; justify-content:space-between; align-items:center; background:var(--paper); padding:14px 18px; border-radius:12px; border:1px solid var(--line); font-size:.92rem; font-weight:600;}
-.stats-bar span.date-tag{color:var(--ink-soft); font-weight:500; font-family:'IBM Plex Mono',monospace; font-size:.85rem;}
-.stats-count{color:var(--teal); font-weight:700; font-size:1.1rem;}
+button.btn-reset{
+  background:rgba(239, 123, 100, 0.15); color:var(--coral); border:1px solid var(--coral);
+  padding:6px 14px; font-size:.78rem; font-weight:600; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:6px;
+}
+button.btn-reset:hover{background:var(--coral); color:#fff;}
 
-footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78rem;}
+/* Log Table */
+.table-wrap{overflow-x:auto;}
+table{width:100%; border-collapse:collapse; text-align:left; font-size:.9rem;}
+th{font-size:.7rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; padding:12px 10px; border-bottom:1px solid var(--line);}
+td{padding:14px 10px; border-bottom:1px solid rgba(35,65,60,0.5); font-size:.9rem;}
+td.q-num{font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--ink);}
+td.ic-num{font-family:'IBM Plex Mono',monospace; color:var(--ink-soft);}
+td.time-col{color:var(--ink-soft); font-size:.82rem;}
+tr:last-child td{border-bottom:none;}
+.empty-table{text-align:center; color:var(--ink-soft); padding:24px 0;}
 </style>
 </head>
 <body>
+
 <div class="wrap">
-  <div class="brand">
-    <div class="brand-left">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
-      <div><h1>Staff Control Panel</h1><span class="sub">Mini Clinic — Queue Manager</span></div>
+  <div class="header-bar">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+      <div><h1>Queue System</h1><span class="sub">Mini Clinic — Staff Counter</span></div>
     </div>
-    <div class="badge" id="liveBadge">Connected</div>
   </div>
 
-  <div class="grid">
-    <!-- 1. PATIENT SEARCH BOX (TOP) -->
-    <div class="card">
-      <div class="label">Patient Search & Lookup</div>
-      <div class="search-box">
-        <input type="text" id="searchInput" class="idInput" placeholder="🔍 Enter Full Name or 12-Digit IC Number to search..." autocomplete="off">
-      </div>
-
-      <div id="searchResultsArea" style="display:none; margin-top:16px;">
-        <div style="font-size:.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;">Search Results</div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Queue No.</th>
-                <th>Patient Name</th>
-                <th>IC Number</th>
-                <th>Reg. Time</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="searchResultsBody"></tbody>
-          </table>
-        </div>
-      </div>
+  <!-- Search Card -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px;">Patient Search & Lookup</div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" class="search-input" placeholder="Enter Full Name or 12-Digit IC Number to search..." autocomplete="off">
     </div>
+  </div>
 
-    <!-- 2. CURRENTLY SERVING CARD -->
-    <div class="card" style="text-align:center;">
-      <div class="label">Currently Serving</div>
-      <div class="num" id="servingNum" style="color:var(--coral)">— — —</div>
-      <div id="servingDetails" class="patient-details" style="display:none;">
-        <div class="patient-name" id="servingName">-</div>
-        <div class="patient-ic" id="servingIc">IC: -</div>
-      </div>
+  <!-- Serving Card -->
+  <div class="card">
+    <div class="serving-box">
+      <div class="card-title">Currently Serving</div>
+      <div class="serving-num" id="servingNumDisplay">— — —</div>
       
+      <div class="patient-details" id="patientDetailBox" style="display:none;">
+        <div class="patient-name" id="servingName">—</div>
+        <div class="patient-ic" id="servingIc">IC: —</div>
+      </div>
+
       <div class="btn-group">
-        <button class="primary" id="callNextBtn">Call Next Patient</button>
-        <button class="danger" id="completeBtn" style="display:none;">Mark Completed / Done</button>
+        <button class="btn-call" id="callNextBtn">Call Next Patient</button>
+        <button class="btn-done" id="markDoneBtn" disabled>Mark Completed / Done</button>
       </div>
-    </div>
-
-    <!-- 3. UPCOMING QUEUE CARD (Clears when reset) -->
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="label" style="margin:0;">Upcoming Patients (<span id="waitingCount">0</span>)</div>
-        <button class="ghost" id="resetBtn" style="color:var(--coral);">Reset Active Queue</button>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Queue No.</th>
-              <th>Patient Name</th>
-              <th>IC Number</th>
-              <th>Reg. Time</th>
-            </tr>
-          </thead>
-          <tbody id="queueTableBody">
-            <tr><td colspan="4" style="text-align:center; color:var(--ink-soft);">No patients waiting</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 4. PERMANENT DAILY REGISTRATION LOG TABLE (NOT erased on Queue Reset) -->
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-        <div class="label" style="margin:0;">Daily Patient Registry Log</div>
-        <span style="font-size:.75rem; color:var(--teal); font-weight:600;">🔒 Permanent Record</span>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Queue No.</th>
-              <th>Patient Name</th>
-              <th>IC Number</th>
-              <th>Reg. Date & Time</th>
-            </tr>
-          </thead>
-          <tbody id="logTableBody">
-            <tr><td colspan="4" style="text-align:center; color:var(--ink-soft);">No patient records logged today</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 5. DAILY PATIENT COUNTER BAR (BOTTOM) -->
-    <div class="stats-bar">
-      <div>Total Patients Registered Today: <span class="stats-count" id="todayCount">0</span></div>
-      <span class="date-tag" id="currentDateStr">(---)</span>
     </div>
   </div>
 
-  <footer id="statusFooter">Mini Clinic Staff Portal — Realtime Sync Enabled</footer>
+  <!-- Log Table Card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Daily Patient Registry Log</div>
+      <button class="btn-reset" id="resetLogBtn">
+        🔄 Reset Daily Registry
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Queue No.</th>
+            <th>Patient Name</th>
+            <th>IC Number</th>
+            <th>Reg. Date & Time</th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody">
+          <tr><td colspan="4" class="empty-table">Loading daily records…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -200,216 +157,124 @@ footer{text-align:center; margin-top:32px; color:var(--ink-soft); font-size:.78r
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  let ticketsList = [];
-  let logsList = [];
-  let servingCreatedAt = null;
+  let allTickets = [];
+  let currentServingCreatedAt = null;
+  let filterQuery = "";
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
-  function getTicketNumber(t){
-    const idx = logsList.findIndex(x => x.id === t.id);
-    return idx !== -1 ? idx + 1 : 1;
+  function formatDateTime(timestamp){
+    if(!timestamp) return '—';
+    const d = new Date(timestamp);
+    const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return `${dateStr} ${timeStr}`;
   }
 
-  function formatTimeOnly(ts){
-    if(!ts) return '-';
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  }
+  function renderStaffView(){
+    // Filter tickets based on search query
+    const filtered = allTickets.filter(t => {
+      if(!filterQuery) return true;
+      const q = filterQuery.toLowerCase();
+      return (t.name && t.name.toLowerCase().includes(q)) || 
+             (t.idNumber && t.idNumber.includes(q)) ||
+             (t.ticketNumber && t.ticketNumber.toLowerCase().includes(q));
+    });
 
-  function formatFullDateTime(ts){
-    if(!ts) return '-';
-    const d = new Date(ts);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + 
-           d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  function getFormattedTodayDate(){
-    const now = new Date();
-    return now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
-  function renderStaff(){
-    // Currently Serving
-    const servingTicket = ticketsList.find(t => t.createdAt === servingCreatedAt);
-    const servingNumEl = document.getElementById('servingNum');
-    const servingDetails = document.getElementById('servingDetails');
-    const servingNameEl = document.getElementById('servingName');
-    const servingIcEl = document.getElementById('servingIc');
-    const completeBtn = document.getElementById('completeBtn');
-
-    if (servingTicket) {
-      servingNumEl.textContent = fmt(getTicketNumber(servingTicket));
-      servingNameEl.textContent = servingTicket.name || 'Anonymous';
-      servingIcEl.textContent = 'IC: ' + (servingTicket.idNumber || 'N/A');
-      servingDetails.style.display = 'block';
-      completeBtn.style.display = 'inline-block';
+    // Render Table
+    const tbody = document.getElementById('logTableBody');
+    if(filtered.length === 0){
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-table">${filterQuery ? 'No matching records found' : 'No patients registered today'}</td></tr>`;
     } else {
-      servingNumEl.textContent = '— — —';
-      servingDetails.style.display = 'none';
-      completeBtn.style.display = 'none';
-    }
-
-    // Upcoming Queue Table
-    const waitingTickets = servingCreatedAt 
-      ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
-      : ticketsList;
-
-    document.getElementById('waitingCount').textContent = waitingTickets.length;
-
-    const tbody = document.getElementById('queueTableBody');
-    if (waitingTickets.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-soft); padding:18px;">No patients waiting</td></tr>';
-    } else {
-      tbody.innerHTML = waitingTickets.map(t => `
+      tbody.innerHTML = filtered.map(t => `
         <tr>
-          <td class="mono">${fmt(getTicketNumber(t))}</td>
-          <td><strong>${t.name || 'Anonymous'}</strong></td>
-          <td class="mono" style="color:var(--ink-soft);">${t.idNumber || '-'}</td>
-          <td class="mono" style="color:var(--ink-soft);">${formatTimeOnly(t.createdAt)}</td>
+          <td class="q-num">${t.ticketNumber || fmt(t.ticketSeq)}</td>
+          <td><strong>${t.name || 'Unknown'}</strong></td>
+          <td class="ic-num">${t.idNumber || '—'}</td>
+          <td class="time-col">${formatDateTime(t.createdAt)}</td>
         </tr>
       `).join('');
     }
 
-    // Daily Patient Registry Log Table (Permanent)
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfTodayMs = startOfToday.getTime();
+    // Render Currently Serving
+    const servingNumDisplay = document.getElementById('servingNumDisplay');
+    const patientDetailBox = document.getElementById('patientDetailBox');
+    const servingName = document.getElementById('servingName');
+    const servingIc = document.getElementById('servingIc');
+    const markDoneBtn = document.getElementById('markDoneBtn');
 
-    const todayLogs = logsList.filter(t => t.createdAt >= startOfTodayMs);
+    const currentlyServing = allTickets.find(t => t.createdAt === currentServingCreatedAt);
 
-    const logBody = document.getElementById('logTableBody');
-    if (todayLogs.length === 0) {
-      logBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--ink-soft); padding:18px;">No patient records logged today</td></tr>';
+    if(currentlyServing){
+      servingNumDisplay.textContent = currentlyServing.ticketNumber || fmt(currentlyServing.ticketSeq);
+      servingName.textContent = currentlyServing.name;
+      servingIc.textContent = `IC: ${currentlyServing.idNumber}`;
+      patientDetailBox.style.display = 'block';
+      markDoneBtn.disabled = false;
     } else {
-      logBody.innerHTML = todayLogs.map(t => `
-        <tr>
-          <td class="mono">${fmt(getTicketNumber(t))}</td>
-          <td><strong>${t.name || 'Anonymous'}</strong></td>
-          <td class="mono" style="color:var(--ink-soft);">${t.idNumber || '-'}</td>
-          <td class="mono" style="color:var(--ink-soft);">${formatFullDateTime(t.createdAt)}</td>
-        </tr>
-      `).join('');
-    }
-
-    // Bottom Stats Counter
-    const todayStr = getFormattedTodayDate();
-    document.getElementById('currentDateStr').textContent = `(${todayStr})`;
-    document.getElementById('todayCount').textContent = todayLogs.length;
-
-    handleSearch();
-  }
-
-  function handleSearch(){
-    const query = document.getElementById('searchInput').value.trim().toLowerCase();
-    const resultsArea = document.getElementById('searchResultsArea');
-    const resultsBody = document.getElementById('searchResultsBody');
-
-    if(!query){
-      resultsArea.style.display = 'none';
-      resultsBody.innerHTML = '';
-      return;
-    }
-
-    const matches = logsList.filter(t => 
-      (t.name && t.name.toLowerCase().includes(query)) || 
-      (t.idNumber && t.idNumber.toLowerCase().includes(query))
-    );
-
-    resultsArea.style.display = 'block';
-
-    if(matches.length === 0){
-      resultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-soft); padding:14px;">No matching patient records found</td></tr>';
-    } else {
-      resultsBody.innerHTML = matches.map(t => {
-        let statusTag = '';
-        if(servingCreatedAt && t.createdAt === servingCreatedAt){
-          statusTag = '<span class="status-tag tag-serving">Serving</span>';
-        } else if(servingCreatedAt && t.createdAt < servingCreatedAt){
-          statusTag = '<span class="status-tag tag-completed">Completed</span>';
-        } else {
-          statusTag = '<span class="status-tag tag-waiting">Waiting</span>';
-        }
-
-        return `
-          <tr>
-            <td class="mono">${fmt(getTicketNumber(t))}</td>
-            <td><strong>${t.name || 'Anonymous'}</strong></td>
-            <td class="mono" style="color:var(--ink-soft);">${t.idNumber || '-'}</td>
-            <td class="mono" style="color:var(--ink-soft);">${formatFullDateTime(t.createdAt)}</td>
-            <td>${statusTag}</td>
-          </tr>
-        `;
-      }).join('');
+      servingNumDisplay.textContent = '— — —';
+      patientDetailBox.style.display = 'none';
+      markDoneBtn.disabled = true;
     }
   }
 
-  document.getElementById('searchInput').addEventListener('input', handleSearch);
-
+  // Database Listener
   db.ref().on('value', (snapshot) => {
     const data = snapshot.val() || {};
     const ticketsObj = data.tickets || {};
-    const logsObj = data.logs || {};
 
-    // Auto-archive any incoming tickets into permanent logs
-    Object.keys(ticketsObj).forEach(key => {
-      if (!logsObj[key]) {
-        db.ref('logs/' + key).set(ticketsObj[key]);
-      }
-    });
+    allTickets = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+    currentServingCreatedAt = data.servingCreatedAt || null;
 
-    ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
-    logsList = Object.values(logsObj).sort((a, b) => a.createdAt - b.createdAt);
-    servingCreatedAt = data.servingCreatedAt || null;
-
-    document.getElementById('liveBadge').textContent = 'Live Connected';
-    renderStaff();
-  }, (error) => {
-    document.getElementById('liveBadge').textContent = 'Offline';
-    document.getElementById('liveBadge').style.color = 'var(--coral)';
+    renderStaffView();
   });
 
+  // Call Next Patient
   document.getElementById('callNextBtn').onclick = () => {
-    const waitingTickets = servingCreatedAt 
-      ? ticketsList.filter(t => t.createdAt > servingCreatedAt)
-      : ticketsList;
-
-    if (waitingTickets.length === 0) {
-      alert('No patients waiting in active queue.');
+    const waiting = allTickets.filter(t => !currentServingCreatedAt || t.createdAt > currentServingCreatedAt);
+    if(waiting.length === 0){
+      alert('No more waiting patients in queue!');
       return;
     }
 
-    const nextTicket = waitingTickets[0];
-    const now = Date.now();
-
+    const nextPatient = waiting[0];
     db.ref().update({
-      servingCreatedAt: nextTicket.createdAt,
-      servingStartedAt: now
+      servingCreatedAt: nextPatient.createdAt,
+      servingStartedAt: Date.now()
     });
   };
 
-  document.getElementById('completeBtn').onclick = () => {
-    if(!servingCreatedAt) return;
-
-    const waitingTickets = ticketsList.filter(t => t.createdAt > servingCreatedAt);
-    if(waitingTickets.length > 0){
-      const nextTicket = waitingTickets[0];
-      db.ref().update({
-        servingCreatedAt: nextTicket.createdAt,
-        servingStartedAt: Date.now()
-      });
-    } else {
-      db.ref('servingCreatedAt').remove();
-      db.ref('servingStartedAt').remove();
-    }
+  // Mark Completed / Done
+  document.getElementById('markDoneBtn').onclick = () => {
+    if(!currentServingCreatedAt) return;
+    
+    // Clear active serving state
+    db.ref('servingStartedAt').remove();
+    // Move serving cursor forward or keep current to allow calling next
+    renderStaffView();
   };
 
-  // Resets ONLY active queue (tickets & serving state), keeping daily logs intact
-  document.getElementById('resetBtn').onclick = () => {
-    if(confirm('Are you sure you want to reset the active queue? (Your daily patient registry log will be safely preserved).')){
-      db.ref('tickets').remove();
-      db.ref('servingCreatedAt').remove();
-      db.ref('servingStartedAt').remove();
+  // Search input event
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    filterQuery = e.target.value.trim();
+    renderStaffView();
+  });
+
+  // RESET LOG & QUEUE COUNTER
+  document.getElementById('resetLogBtn').onclick = () => {
+    const confirmReset = confirm("⚠️ Are you sure you want to reset the registry log?\n\nThis will clear all patient records, clear the live queue, and reset the queue ticket counter back to A001.");
+    
+    if (confirmReset) {
+      db.ref().update({
+        tickets: null,
+        dailyCounter: 0,
+        servingCreatedAt: null,
+        servingStartedAt: null
+      }).then(() => {
+        alert("✅ Queue and Registry Log have been successfully reset to A001!");
+      }).catch((err) => {
+        alert("Failed to reset: " + err.message);
+      });
     }
   };
 </script>
