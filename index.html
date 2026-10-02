@@ -194,13 +194,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
-  // STRICT PERMANENT TICKET NUMBER LOOKUP (NO ARRAY RE-INDEXING)
   function getTicketNumber(t){
     if(!t) return '— — —';
     if(t.ticketNumber) return t.ticketNumber;
     if(t.ticketSeq) return fmt(t.ticketSeq);
 
-    // Lookup in live db list
     const found = ticketsList.find(x => x.id === t.id || (x.idNumber && t.idNumber && x.idNumber === t.idNumber));
     if(found && found.ticketNumber) return found.ticketNumber;
     if(found && found.ticketSeq) return fmt(found.ticketSeq);
@@ -271,10 +269,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
     let mine = null;
     if (myTicket) {
-      // Find exact record in live database
       const dbMatch = ticketsList.find(x => x.id === myTicket.id || (x.idNumber && myTicket.idNumber && x.idNumber === myTicket.idNumber));
       if (dbMatch) {
-        mine = dbMatch; // Absolute DB ground-truth override
+        mine = dbMatch;
         myTicket = dbMatch;
         saveMyTicket();
       } else {
@@ -379,6 +376,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
   });
 
+  // ATOMIC GAP-FREE TICKET CREATION
   takeBtn.onclick = (e) => {
     if(e) e.preventDefault();
     initAudio();
@@ -407,19 +405,19 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
     takeBtn.disabled = true;
 
-    // Increment global daily counter atomically in Firebase
-    db.ref('dailyCounter').transaction((curr) => {
-      return (curr || 0) + 1;
-    }, (error, committed, snapshot) => {
-      if (error || !committed) {
-        takeBtn.disabled = false;
-        formErr.textContent = 'Failed to assign queue number. Please try again.';
-        return;
-      }
+    const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
 
-      const seqNumber = snapshot.val();
+    db.ref('tickets').transaction((tickets) => {
+      tickets = tickets || {};
+      let maxSeq = 0;
+      Object.values(tickets).forEach(t => {
+        if (t && t.ticketSeq && t.ticketSeq > maxSeq) {
+          maxSeq = t.ticketSeq;
+        }
+      });
+
+      const seqNumber = maxSeq + 1;
       const ticketNumStr = fmt(seqNumber);
-      const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
 
       const newTicket = {
         id: ticketId,
@@ -430,21 +428,24 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         createdAt: Date.now()
       };
 
-      pendingSubmissionId = ticketId;
-      myTicket = newTicket;
-      saveMyTicket();
+      tickets[ticketId] = newTicket;
+      return tickets;
+    }, (error, committed, snapshot) => {
+      takeBtn.disabled = false;
+      if (error || !committed) {
+        formErr.textContent = 'Failed to assign queue number. Please try again.';
+        return;
+      }
 
-      db.ref('tickets/' + ticketId).set(newTicket).then(() => {
-        takeBtn.disabled = false;
+      const createdTickets = snapshot.val() || {};
+      const savedTicket = createdTickets[ticketId];
+      if (savedTicket) {
+        myTicket = savedTicket;
+        saveMyTicket();
         nameInput.value = '';
         idInput.value = '';
-        pendingSubmissionId = null;
         render();
-      }).catch(err => {
-        takeBtn.disabled = false;
-        pendingSubmissionId = null;
-        formErr.textContent = 'Failed to issue ticket. Please try again.';
-      });
+      }
     });
   };
 
@@ -453,26 +454,30 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     simBtn.onclick = () => {
       initAudio();
 
-      db.ref('dailyCounter').transaction((curr) => {
-        return (curr || 0) + 1;
-      }, (error, committed, snapshot) => {
-        if (!committed) return;
+      const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const names = ['Ahmad Sattiya', 'Shaarvesh Kumar', 'Lim Wei Ting', 'Muthusamy', 'Nur Aini', 'Chong Jin', 'Ratha'];
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      const randomIc = String(Math.floor(100000000000 + Math.random() * 900000000000));
 
-        const seqNumber = snapshot.val();
-        const ticketNumStr = fmt(seqNumber);
-        const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-        const names = ['Ahmad Sattiya', 'Shaarvesh Kumar', 'Lim Wei Ting', 'Muthusamy', 'Nur Aini', 'Chong Jin', 'Ratha'];
-        const randomName = names[Math.floor(Math.random() * names.length)];
-        const randomIc = String(Math.floor(100000000000 + Math.random() * 900000000000));
-        
-        db.ref('tickets/' + simId).set({
+      db.ref('tickets').transaction((tickets) => {
+        tickets = tickets || {};
+        let maxSeq = 0;
+        Object.values(tickets).forEach(t => {
+          if (t && t.ticketSeq && t.ticketSeq > maxSeq) {
+            maxSeq = t.ticketSeq;
+          }
+        });
+
+        const seqNumber = maxSeq + 1;
+        tickets[simId] = {
           id: simId,
-          ticketNumber: ticketNumStr,
+          ticketNumber: fmt(seqNumber),
           ticketSeq: seqNumber,
           name: randomName,
           idNumber: randomIc,
           createdAt: Date.now()
-        });
+        };
+        return tickets;
       });
     };
   }
