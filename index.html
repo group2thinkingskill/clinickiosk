@@ -1,252 +1,453 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini Clinic Queue System - Patient Kiosk</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini Clinic — Patient Kiosk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6FAF9; --paper-2:#EAF2F0; --ink:#0F2A2E; --ink-soft:#4B6560;
+  --teal:#146B62; --teal-deep:#0C4A44; --coral:#C94430; --line:#CFE0DC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
+    --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1B1A; --paper-2:#142524; --ink:#EAF3F1; --ink-soft:#9FBDB7;
+  --teal:#4FBFAF; --teal-deep:#7FDCCB; --coral:#EF7B64; --line:#23413C;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;}
+.wrap{max-width:520px; margin:0 auto; padding:28px 20px 48px;}
+.brand{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
+.brand .mark{width:34px;height:34px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;}
+.brand .mark svg{width:18px;height:18px;}
+.brand h1{font-size:1.15rem;font-weight:700;margin:0;letter-spacing:-0.01em;}
+.brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;margin-top:1px;}
+.greeting{font-size:1.1rem;font-weight:600;color:var(--teal);margin-bottom:12px;text-align:center;}
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center;}
+.label{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:3.4rem;letter-spacing:.04em;line-height:1;}
+.seam{border-top:2px dashed var(--line);margin:20px -26px;position:relative;}
+.seam::before,.seam::after{content:"";position:absolute;top:-11px;width:22px;height:22px;border-radius:50%;background:var(--paper);}
+.seam::before{left:-11px;} .seam::after{right:-11px;}
+.status{font-size:.95rem;color:var(--ink-soft);margin-top:4px;}
+.status.now{color:var(--coral);font-weight:700;animation:pulse 1.1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+.est-box{margin-top:16px;padding:12px;background:rgba(20,107,98,0.08);border-radius:10px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:.9rem;font-weight:600;color:var(--teal-deep);}
+.est-box span{font-family:'IBM Plex Mono',monospace;font-size:1.05rem;font-weight:700;color:var(--teal);}
+button.primary{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
+button.primary:active{background:var(--teal-deep);}
+button.primary:disabled{opacity:0.6;cursor:not-allowed;}
+button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;padding:4px;}
+.actions{text-align:center;margin-top:22px;}
+.field{text-align:left;margin-bottom:14px;}
+.fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
+.idInput{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.95rem;}
+.idInput:focus{outline:2px solid var(--teal);outline-offset:1px;}
+.fieldErr{color:var(--coral);font-size:.8rem;margin-top:6px;min-height:1em;font-weight:500;}
+.empty{color:var(--ink-soft);font-size:.9rem;margin-top:18px;}
+footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;}
+.dev-tools{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line);display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
+</style>
 </head>
-<body class="bg-[#0b1715] text-slate-100 font-sans min-h-screen pb-12">
-
-  <!-- TOP NAVIGATION BAR -->
-  <header class="border-b border-emerald-900/40 bg-[#0e1d1a] px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-md">
-    <div class="flex items-center gap-3">
-      <span class="bg-emerald-500 text-slate-950 font-bold w-8 h-8 flex items-center justify-center rounded-lg text-xl shadow-sm">+</span>
-      <div>
-        <h1 class="font-bold text-emerald-400 text-base md:text-lg tracking-wide leading-tight">Mini Clinic Queue System</h1>
-        <p class="text-[10px] text-gray-400">POLIMAS Mini Clinic — Patient Kiosk</p>
-      </div>
-    </div>
-
-    <div>
-      <a href="staff.html" target="_blank" class="bg-[#122320] border border-emerald-900/60 text-emerald-400 hover:bg-emerald-900/40 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
-        <span>👨‍⚕️</span> Open Staff Panel ↗
-      </a>
-    </div>
-  </header>
-
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-6xl mx-auto p-4 md:p-6 mt-4">
-    <div class="grid md:grid-cols-12 gap-6">
-      
-      <!-- REGISTRATION FORM (LEFT) -->
-      <div class="md:col-span-5 bg-[#122320] border border-emerald-900/50 rounded-2xl p-6 shadow-xl h-fit">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-bold text-emerald-400 flex items-center gap-2">
-            <span>🎟️</span> Get Queue Ticket
-          </h2>
-          <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-emerald-800/40">Self Service</span>
-        </div>
-        <p class="text-xs text-gray-400 mb-5">Fill in your details below to obtain your automated digital queue ticket.</p>
-
-        <form id="patient-form" onsubmit="handleRegister(event)" class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Full Name</label>
-            <input type="text" id="patient-name" required placeholder="e.g. Sattiya / Shaarvesh" 
-              class="w-full bg-[#0b1715] border border-emerald-900/60 rounded-xl p-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition"/>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">IC Number / Passport</label>
-            <input type="text" id="patient-ic" required placeholder="e.g. 1234567890" 
-              class="w-full bg-[#0b1715] border border-emerald-900/60 rounded-xl p-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition"/>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-gray-300 mb-1">Service Category</label>
-            <select id="patient-category" class="w-full bg-[#0b1715] border border-emerald-900/60 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
-              <option value="General Consultation">General Consultation / Medical Checkup</option>
-              <option value="Emergency / Urgent">Emergency / Urgent Care</option>
-              <option value="Pharmacy / Collection">Pharmacy / Medicine Collection</option>
-            </select>
-          </div>
-
-          <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-xs transition shadow-lg mt-2 flex items-center justify-center gap-2">
-            <span>🖨️</span> Print & Take Ticket
-          </button>
-        </form>
-      </div>
-
-      <!-- DISPLAY PANEL & TICKET STATUS (RIGHT) -->
-      <div class="md:col-span-7 space-y-6">
-        
-        <!-- Live Announcement Screen -->
-        <div class="bg-[#122320] border-2 border-emerald-500/40 rounded-2xl p-6 text-center shadow-xl relative overflow-hidden">
-          <div class="absolute top-3 right-3 flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span class="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Live Screen</span>
-          </div>
-
-          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Now Serving at Room 1</p>
-          <div id="live-display-number" class="text-6xl md:text-7xl font-black text-emerald-400 my-3 tracking-tight">---</div>
-          <div id="live-display-name" class="text-sm font-semibold text-gray-300">Waiting for next patient...</div>
-          <p id="live-display-category" class="text-xs text-emerald-500/80 mt-1 font-medium"></p>
-        </div>
-
-        <!-- Active Ticket Card -->
-        <div class="bg-[#122320]/80 border border-emerald-900/50 rounded-2xl p-6 shadow-lg">
-          <div class="flex justify-between items-center mb-4 border-b border-emerald-900/40 pb-3">
-            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Your Ticket Status</h3>
-            <span id="ticket-status-badge" class="bg-gray-800 text-gray-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full">No Active Ticket</span>
-          </div>
-
-          <div class="text-center py-2">
-            <p class="text-[11px] text-gray-400">Ticket Number</p>
-            <div id="ticket-card-number" class="text-5xl font-black text-white my-1">---</div>
-            <p id="ticket-card-name" class="text-xs font-semibold text-emerald-300">Register on the form to view your ticket</p>
-            <p id="ticket-card-ic" class="text-[10px] text-gray-500 mt-0.5"></p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-emerald-900/40 text-center">
-            <div class="bg-[#0b1715] p-3 rounded-xl border border-emerald-900/40">
-              <p class="text-gray-400 text-[10px]">Registered Time</p>
-              <p id="ticket-card-time" class="font-bold text-emerald-400 text-xs mt-0.5">--:--</p>
-            </div>
-            <div class="bg-[#0b1715] p-3 rounded-xl border border-emerald-900/40">
-              <p class="text-gray-400 text-[10px]">Position Ahead</p>
-              <p id="ticket-card-pos" class="font-bold text-emerald-400 text-xs mt-0.5">--</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </main>
-
-  <!-- PRINTABLE RECEIPT MODAL -->
-  <div id="ticket-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white text-slate-900 max-w-sm w-full p-6 rounded-2xl shadow-2xl text-center space-y-4">
-      <div class="border-b border-slate-200 pb-3">
-        <h3 class="text-lg font-bold text-emerald-800">Mini Clinic POLIMAS</h3>
-        <p class="text-[10px] text-slate-500">Queue Receipt</p>
-      </div>
-      <div>
-        <p class="text-xs font-semibold text-slate-500 uppercase">Your Ticket Number</p>
-        <div id="modal-ticket-number" class="text-6xl font-black text-slate-900 my-1">A001</div>
-        <p id="modal-patient-name" class="text-sm font-bold text-emerald-700">Patient Name</p>
-        <p id="modal-patient-ic" class="text-xs text-slate-500">IC: 1234567890</p>
-      </div>
-      <div class="bg-slate-100 p-3 rounded-xl text-xs space-y-1">
-        <p class="flex justify-between text-slate-600"><span>Service:</span> <b id="modal-service" class="text-slate-900">General</b></p>
-        <p class="flex justify-between text-slate-600"><span>Issued At:</span> <b id="modal-time" class="text-slate-900">12:00 PM</b></p>
-      </div>
-      <p class="text-[10px] text-slate-400">Please wait for your ticket number to be called on the display screen.</p>
-      <div class="flex gap-2 pt-2">
-        <button onclick="window.print()" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl transition">🖨️ Print Receipt</button>
-        <button onclick="closeModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold py-2.5 rounded-xl transition">Close</button>
-      </div>
-    </div>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+    <div><h1>Queue System</h1><span class="sub">Mini Clinic — Patient Kiosk</span></div>
   </div>
 
-  <script>
-    let state = {
-      ticketCounter: parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10),
-      queue: JSON.parse(localStorage.getItem('mc_queue') || '[]'),
-      currentlyServing: JSON.parse(localStorage.getItem('mc_currentlyServing') || 'null'),
-      patientLog: JSON.parse(localStorage.getItem('mc_patientLog') || '[]'),
-      lastTicket: JSON.parse(localStorage.getItem('mc_lastTicket') || 'null')
+  <div id="greetingHeader" class="greeting"></div>
+
+  <div class="card" id="patientCard"></div>
+  <div class="actions">
+    <div id="takeSection">
+      <div class="field">
+        <label for="nameInput" class="fieldLabel">Full Name (Letters Only)</label>
+        <input type="text" id="nameInput" class="idInput" placeholder="e.g. Ahmad Sattiya" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="idInput" class="fieldLabel">Malaysian IC Number (12 Digits Only)</label>
+        <input type="text" id="idInput" class="idInput" placeholder="e.g. 020512085432" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off">
+        <div class="fieldErr" id="formErr"></div>
+      </div>
+      <button class="primary" id="takeBtn">Take a queue number</button>
+    </div>
+
+    <div class="dev-tools">
+      <button class="ghost" id="simBtn">+ simulate arrival</button>
+    </div>
+
+    <div class="empty" id="patientQueueInfo">Loading queue status…</div>
+  </div>
+  <footer id="modeNote">Connecting to live cloud…</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBZ9TFjNVtcvSkj_qJsEeDgRxbCqR-u84M",
+    authDomain: "clinickiosk-ffbc0.firebaseapp.com",
+    databaseURL: "https://clinickiosk-ffbc0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "clinickiosk-ffbc0",
+    storageBucket: "clinickiosk-ffbc0.firebasestorage.app",
+    messagingSenderId: "657601053327",
+    appId: "1:657601053327:web:9b9adf3bd4f1f3810826fa",
+    measurementId: "G-KCBXXT70PY"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let ticketsList = [];
+  let servingCreatedAt = null;
+  let servingStartedAt = null;
+  let myTicket = null;
+  let pendingSubmissionId = null;
+  
+  let hasAlertedForCurrentTurn = false;
+  let lastAheadCount = null;
+  
+  let audioCtx = null;
+
+  function getTimeGreeting(){
+    const hr = new Date().getHours();
+    if(hr < 12) return "Good morning";
+    if(hr < 18) return "Good afternoon";
+    return "Good evening";
+  }
+
+  function initAudio(){
+    try {
+      if(!audioCtx){
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
+      }
+      if(audioCtx && audioCtx.state === 'suspended'){
+        audioCtx.resume();
+      }
+    } catch(e) {}
+  }
+
+  function playAlertChime(){
+    try {
+      initAudio();
+      if(!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523.25, now);
+      gain1.gain.setValueAtTime(0.8, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.3);
+
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(659.25, now + 0.15);
+      gain2.gain.setValueAtTime(0.8, now + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.15);
+      osc2.stop(now + 0.5);
+    } catch(e){}
+  }
+
+  function playTurnChime(){
+    try {
+      initAudio();
+      if(!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + (i * 0.12));
+        gain.gain.setValueAtTime(1.0, now + (i * 0.12));
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.12) + 0.6);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + (i * 0.12));
+        osc.stop(now + (i * 0.12) + 0.6);
+      });
+    } catch(e){}
+  }
+
+  const fmt = n => 'A' + String(n).padStart(3, '0');
+
+  function getTicketNumber(t){
+    if(!t) return 1;
+    const idx = ticketsList.findIndex(x => x.id === t.id);
+    if(idx !== -1) return idx + 1;
+    const countBefore = ticketsList.filter(x => x.createdAt < t.createdAt).length;
+    return countBefore + 1;
+  }
+
+  function getWaitingTickets(){
+    if(!servingCreatedAt) return ticketsList;
+    return ticketsList.filter(t => t.createdAt > servingCreatedAt);
+  }
+
+  // DYNAMIC INCREMENTING WAIT TIME LOGIC
+  function calculateEstWaitMinutes(mine){
+    if(!mine) return 0;
+    
+    const w = getWaitingTickets();
+    const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
+    
+    // 1 minute standard allocation for each waiting patient ahead
+    let totalMins = aheadCount * 1;
+
+    // Time for current patient inside the consultation room
+    if(servingCreatedAt && mine.createdAt > servingCreatedAt){
+      const callTime = servingStartedAt || servingCreatedAt;
+      const elapsedMs = Math.max(0, Date.now() - callTime);
+      const elapsedMins = Math.floor(elapsedMs / 60000);
+
+      // Base 1 min + 1 extra minute for every full minute elapsed overtime
+      const currentPatientEstimate = 1 + elapsedMins;
+      totalMins += currentPatientEstimate;
+    }
+
+    return totalMins;
+  }
+
+  function saveMyTicket(){ 
+    try{ 
+      if(myTicket) localStorage.setItem('miniclinic_ticket', JSON.stringify(myTicket));
+      else localStorage.removeItem('miniclinic_ticket');
+    }catch(e){} 
+  }
+
+  function loadMyTicket(){ 
+    try{ 
+      const s = localStorage.getItem('miniclinic_ticket'); 
+      if(s) myTicket = JSON.parse(s); 
+    }catch(e){} 
+  }
+
+  function clearMyTicket(){
+    myTicket = null;
+    hasAlertedForCurrentTurn = false;
+    lastAheadCount = null;
+    try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
+  }
+
+  function render(){
+    const greetingStr = getTimeGreeting();
+    const greetingHeader = document.getElementById('greetingHeader');
+
+    const w = getWaitingTickets();
+    const countEl = document.getElementById('patientQueueInfo');
+    if(countEl){
+      countEl.textContent = w.length + (w.length === 1 ? ' person currently waiting' : ' people currently waiting');
+    }
+
+    const card = document.getElementById('patientCard');
+    const takeSection = document.getElementById('takeSection');
+
+    const mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
+
+    if(!mine){
+      greetingHeader.textContent = `${greetingStr}! Please check in below.`;
+      card.innerHTML = `<div class="label">No ticket yet</div><div class="num" style="color:var(--ink-soft)">— — —</div>`;
+      takeSection.style.display = 'block';
+    } else {
+      const patientName = mine.name ? mine.name : 'Patient';
+      const ticketStr = fmt(getTicketNumber(mine));
+      greetingHeader.textContent = `${greetingStr}, ${patientName}!`;
+
+      let statusHtml;
+      let estWaitHtml = "";
+
+      if(servingCreatedAt && mine.createdAt === servingCreatedAt){
+        statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
+        estWaitHtml = `<div class="est-box">⏱️ <span>0 mins</span> — Please step inside</div>`;
+        
+        if(!hasAlertedForCurrentTurn){
+          playTurnChime();
+          hasAlertedForCurrentTurn = true;
+        }
+      } else if (servingCreatedAt && mine.createdAt < servingCreatedAt) {
+        statusHtml = `<div class="status">Your turn has passed / completed</div>`;
+      } else {
+        const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
+
+        if(lastAheadCount !== null && ahead < lastAheadCount && ahead >= 0){
+          playAlertChime();
+        }
+        lastAheadCount = ahead;
+
+        const estMins = calculateEstWaitMinutes(mine);
+        estWaitHtml = `<div class="est-box">⏱️ Est. Wait Time: <span>~${estMins} ${estMins === 1 ? 'min' : 'mins'}</span></div>`;
+
+        statusHtml = ahead === 0
+          ? `<div class="status">You're next — please wait nearby</div>`
+          : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="label">Your ticket number</div>
+        <div class="num">${ticketStr}</div>
+        <div class="seam"></div>
+        ${statusHtml}
+        ${estWaitHtml}
+        <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
+      `;
+      takeSection.style.display = 'none';
+
+      const btn = document.getElementById('newTicketBtn');
+      if(btn){
+        btn.onclick = () => {
+          clearMyTicket();
+          render();
+        };
+      }
+    }
+  }
+
+  db.ref().on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    const ticketsObj = data.tickets || {};
+    
+    ticketsList = Object.values(ticketsObj).sort((a, b) => a.createdAt - b.createdAt);
+    servingCreatedAt = data.servingCreatedAt || null;
+    servingStartedAt = data.servingStartedAt || null;
+
+    if (myTicket) {
+      const existsInDb = ticketsList.some(t => t.id === myTicket.id);
+      if (!existsInDb && pendingSubmissionId !== myTicket.id) {
+        clearMyTicket();
+      }
+    }
+
+    document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
+    render();
+  }, (error) => {
+    document.getElementById('modeNote').textContent = "Can't connect to live database.";
+  });
+
+  // Re-render every 3 seconds to increment timer dynamically as time elapses
+  setInterval(() => {
+    if (myTicket) render();
+  }, 3000);
+
+  const nameInput = document.getElementById('nameInput');
+  const idInput = document.getElementById('idInput');
+  const takeBtn = document.getElementById('takeBtn');
+  const formErr = document.getElementById('formErr');
+
+  nameInput.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+    formErr.textContent = '';
+  });
+
+  // Strict 12-digit digits-only filter
+  idInput.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 12);
+    formErr.textContent = '';
+  });
+
+  takeBtn.onclick = (e) => {
+    if(e) e.preventDefault();
+    initAudio();
+    
+    const nameVal = nameInput.value.trim();
+    const idVal = idInput.value.trim();
+
+    if(!nameVal){ 
+      formErr.textContent = 'Please enter your full name'; 
+      nameInput.focus(); 
+      return; 
+    }
+
+    if(!idVal){ 
+      formErr.textContent = 'Please enter your Malaysian IC number'; 
+      idInput.focus(); 
+      return; 
+    }
+
+    // Explicit 12-digit Malaysian IC check
+    if(idVal.length !== 12 || !/^\d{12}$/.test(idVal)){
+      formErr.textContent = 'IC number must be exactly 12 digits (e.g. 020512085432)';
+      idInput.focus();
+      return;
+    }
+
+    formErr.textContent = '';
+    takeBtn.disabled = true;
+
+    const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const newTicket = {
+      id: ticketId,
+      name: nameVal,
+      idNumber: idVal,
+      createdAt: Date.now()
     };
 
-    function loadState() {
-      state.ticketCounter = parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10);
-      state.queue = JSON.parse(localStorage.getItem('mc_queue') || '[]');
-      state.currentlyServing = JSON.parse(localStorage.getItem('mc_currentlyServing') || 'null');
-      state.patientLog = JSON.parse(localStorage.getItem('mc_patientLog') || '[]');
-      state.lastTicket = JSON.parse(localStorage.getItem('mc_lastTicket') || 'null');
-      renderUI();
-    }
+    pendingSubmissionId = ticketId;
+    myTicket = newTicket;
+    hasAlertedForCurrentTurn = false;
+    lastAheadCount = null;
+    saveMyTicket();
+    render();
 
-    function saveState() {
-      localStorage.setItem('mc_ticketCounter', state.ticketCounter.toString());
-      localStorage.setItem('mc_queue', JSON.stringify(state.queue));
-      localStorage.setItem('mc_currentlyServing', JSON.stringify(state.currentlyServing));
-      localStorage.setItem('mc_patientLog', JSON.stringify(state.patientLog));
-      localStorage.setItem('mc_lastTicket', JSON.stringify(state.lastTicket));
-      renderUI();
-    }
-
-    // Listen for changes made by staff.html in real-time
-    window.addEventListener('storage', loadState);
-
-    const formatTicket = (num) => `A${String(num).padStart(3, '0')}`;
-
-    function handleRegister(e) {
-      e.preventDefault();
-      const nameInput = document.getElementById('patient-name');
-      const icInput = document.getElementById('patient-ic');
-      const categoryInput = document.getElementById('patient-category');
-
-      const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      const newTicket = {
-        id: Date.now(),
-        ticketNo: formatTicket(state.ticketCounter),
-        name: nameInput.value.trim(),
-        icNumber: icInput.value.trim(),
-        category: categoryInput.value,
-        registeredAt: timeString,
-        calledAt: null
-      };
-
-      state.queue.push(newTicket);
-      state.ticketCounter += 1;
-      state.lastTicket = newTicket;
-
-      document.getElementById('modal-ticket-number').innerText = newTicket.ticketNo;
-      document.getElementById('modal-patient-name').innerText = newTicket.name;
-      document.getElementById('modal-patient-ic').innerText = `IC: ${newTicket.icNumber}`;
-      document.getElementById('modal-service').innerText = newTicket.category;
-      document.getElementById('modal-time').innerText = newTicket.registeredAt;
-      document.getElementById('ticket-modal').classList.remove('hidden');
-
+    db.ref('tickets/' + ticketId).set(newTicket).then(() => {
+      pendingSubmissionId = null;
       nameInput.value = '';
-      icInput.value = '';
+      idInput.value = '';
+      takeBtn.disabled = false;
+    }).catch((err) => {
+      pendingSubmissionId = null;
+      clearMyTicket();
+      takeBtn.disabled = false;
+      formErr.textContent = "Error issuing ticket. Try again.";
+      render();
+    });
+  };
 
-      saveState();
-    }
+  document.getElementById('simBtn').onclick = (e) => {
+    if(e) e.preventDefault();
+    initAudio();
+    const simId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const sampleNames = ["Ali Hassan", "Siti Nurhaliza", "Tan Wei Ming", "Muthu Raman", "Ahmad Zaki"];
+    const simTicket = {
+      id: simId,
+      name: sampleNames[Math.floor(Math.random() * sampleNames.length)],
+      idNumber: "0" + String(Math.floor(10000000001 + Math.random() * 89999999999)),
+      createdAt: Date.now()
+    };
+    db.ref('tickets/' + simId).set(simTicket);
+  };
 
-    function closeModal() {
-      document.getElementById('ticket-modal').classList.add('hidden');
-    }
+  idInput.addEventListener('keydown', e => { 
+    if(e.key === 'Enter') takeBtn.click(); 
+  });
 
-    function renderUI() {
-      // Live Display
-      if (state.currentlyServing) {
-        document.getElementById('live-display-number').innerText = state.currentlyServing.ticketNo;
-        document.getElementById('live-display-name').innerText = `Patient: ${state.currentlyServing.name}`;
-        document.getElementById('live-display-category').innerText = `Category: ${state.currentlyServing.category || 'General'}`;
-      } else {
-        document.getElementById('live-display-number').innerText = '---';
-        document.getElementById('live-display-name').innerText = 'Waiting for next patient...';
-        document.getElementById('live-display-category').innerText = '';
-      }
+  document.addEventListener('touchstart', () => { initAudio(); }, { once: true });
+  document.addEventListener('click', () => { initAudio(); }, { once: true });
 
-      // Ticket Status Card
-      if (state.lastTicket) {
-        document.getElementById('ticket-card-number').innerText = state.lastTicket.ticketNo;
-        document.getElementById('ticket-card-name').innerText = state.lastTicket.name;
-        document.getElementById('ticket-card-ic').innerText = `IC: ${state.lastTicket.icNumber}`;
-        document.getElementById('ticket-card-time').innerText = state.lastTicket.registeredAt;
-
-        const posIndex = state.queue.findIndex(p => p.id === state.lastTicket.id);
-        if (state.currentlyServing && state.currentlyServing.id === state.lastTicket.id) {
-          document.getElementById('ticket-card-pos').innerText = 'NOW SERVING';
-          document.getElementById('ticket-status-badge').innerText = 'In Consultation';
-          document.getElementById('ticket-status-badge').className = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full';
-        } else if (posIndex >= 0) {
-          document.getElementById('ticket-card-pos').innerText = `${posIndex} ahead`;
-          document.getElementById('ticket-status-badge').innerText = 'Waiting in Queue';
-          document.getElementById('ticket-status-badge').className = 'bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full';
-        } else {
-          document.getElementById('ticket-card-pos').innerText = 'Completed';
-          document.getElementById('ticket-status-badge').innerText = 'Session Finished';
-          document.getElementById('ticket-status-badge').className = 'bg-blue-500/20 text-blue-400 border border-blue-500/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full';
-        }
-      }
-    }
-
-    loadState();
-  </script>
+  loadMyTicket();
+</script>
 </body>
 </html>
