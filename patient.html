@@ -17,14 +17,19 @@
       <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full border border-emerald-800/50 font-semibold ml-2">Patient Kiosk</span>
     </div>
 
-    <a href="index.html" class="text-xs text-gray-400 hover:text-white bg-[#122320] border border-emerald-900/60 px-3.5 py-1.5 rounded-lg transition">
-      ← Staff Console
-    </a>
+    <div class="flex items-center gap-3">
+      <a href="staff.html" class="text-xs text-gray-400 hover:text-white bg-[#122320] border border-emerald-900/60 px-3.5 py-1.5 rounded-lg transition">
+        👨‍⚕️ Staff Console
+      </a>
+      <a href="index.html" class="text-xs text-gray-400 hover:text-white bg-[#122320] border border-emerald-900/60 px-3.5 py-1.5 rounded-lg transition">
+        Home
+      </a>
+    </div>
   </header>
 
   <main class="max-w-4xl mx-auto p-4 md:p-6 grid md:grid-cols-2 gap-6">
     
-    <!-- Patient Registration Form -->
+    <!-- PATIENT REGISTRATION FORM -->
     <div class="bg-[#122320] border border-emerald-900/50 rounded-xl p-6 shadow-lg h-fit">
       <h2 class="text-lg font-bold text-emerald-400 mb-1">Get Queue Ticket</h2>
       <p class="text-xs text-gray-400 mb-5">Please register your details below to obtain a queue ticket.</p>
@@ -48,7 +53,7 @@
       </form>
     </div>
 
-    <!-- Live Display & Issued Receipt -->
+    <!-- LIVE DISPLAY & ACTIVE TICKET CARD -->
     <div class="space-y-4">
       <!-- Live Call Display -->
       <div class="bg-[#122320] border border-emerald-900/50 rounded-xl p-5 text-center">
@@ -57,7 +62,7 @@
         <p id="live-display-name" class="text-xs text-gray-400">Waiting for next patient...</p>
       </div>
 
-      <!-- Issued Active Ticket -->
+      <!-- Issued Active Ticket Receipt -->
       <div id="my-ticket-card" class="bg-[#122320]/80 border-2 border-emerald-500/60 rounded-xl p-5 text-center space-y-3">
         <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
           Your Active Ticket
@@ -102,7 +107,7 @@
       renderUI();
     }
 
-    // Synchronize instantly when staff updates queue on index.html
+    // Real-time sync across browser windows
     window.addEventListener('storage', () => {
       state.ticketCounter = parseInt(localStorage.getItem('mc_ticketCounter') || '1', 10);
       state.queue = JSON.parse(localStorage.getItem('mc_queue') || '[]');
