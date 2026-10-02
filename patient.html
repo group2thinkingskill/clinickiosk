@@ -97,6 +97,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let myTicket = null;
   let audioCtx = null;
   let lastPlayedTurnKey = null;
+  let lastPlayedAheadKey = null;
 
   function initAudio(){
     try {
@@ -108,6 +109,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
+  // Active turn alarm (dual-tone high chime)
   function playTurnAlarm(){
     try {
       initAudio();
@@ -138,6 +140,26 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e){}
   }
 
+  // Warning alert when 2 people are ahead (single gentle beep tone)
+  function playAheadWarningAlarm(){
+    try {
+      initAudio();
+      if(!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now); // D5 note
+      gain.gain.setValueAtTime(0.8, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } catch(e){}
+  }
+
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
   function getWaitingTickets(){
@@ -162,6 +184,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   function clearMyTicket(){
     myTicket = null;
     lastPlayedTurnKey = null;
+    lastPlayedAheadKey = null;
     try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
   }
 
@@ -199,6 +222,15 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         statusHtml = `<div class="status">Your turn has passed / completed</div>`;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
+        
+        if (ahead === 2) {
+          const aheadKey = mine.id + '_ahead_2';
+          if (lastPlayedAheadKey !== aheadKey) {
+            lastPlayedAheadKey = aheadKey;
+            playAheadWarningAlarm();
+          }
+        }
+
         statusHtml = ahead === 0 ? `<div class="status">You're next — please wait nearby</div>` : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
       }
 
