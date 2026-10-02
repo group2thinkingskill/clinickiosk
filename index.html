@@ -140,14 +140,13 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
-  // SOUND 1: Alert Chime (2-note chime for queue updates / turn progression)
+  // SOUND 1: Alert Chime (2-note chime when queue moves)
   function playAlertChime(){
     try {
       initAudio();
       if(!audioCtx) return;
       const now = audioCtx.currentTime;
 
-      // Note 1: C5
       const osc1 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'sine';
@@ -159,7 +158,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       osc1.start(now);
       osc1.stop(now + 0.3);
 
-      // Note 2: E5
       const osc2 = audioCtx.createOscillator();
       const gain2 = audioCtx.createGain();
       osc2.type = 'sine';
@@ -173,14 +171,14 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e){}
   }
 
-  // SOUND 2: Grand Turn Chime (Loud 4-note chime for IT'S YOUR TURN)
+  // SOUND 2: Grand Turn Chime (4-note fanfare when IT'S YOUR TURN)
   function playTurnChime(){
     try {
       initAudio();
       if(!audioCtx) return;
       const now = audioCtx.currentTime;
 
-      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      const notes = [523.25, 659.25, 783.99, 1046.50];
       notes.forEach((freq, i) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -211,31 +209,30 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     return ticketsList.filter(t => t.createdAt > servingCreatedAt);
   }
 
-  // ESTIMATED WAIT TIME CALCULATION
-  // Base: 7 mins per person ahead.
-  // Overtime: If current patient exceeds 7 mins, add +3 mins dynamically (and keep looping +3 if exceeded again).
+  // ESTIMATED WAIT TIME CALCULATION FOR PRESENTATION DEMO
+  // Base: 1 minute per person ahead.
+  // Overtime: If current patient exceeds 1 min, add +1 min continuously.
   function calculateEstWaitMinutes(mine){
     if(!mine) return 0;
     
     const w = getWaitingTickets();
     const aheadCount = w.filter(t => t.createdAt < mine.createdAt).length;
     
-    // Total wait time for patients ahead in line
-    let totalMins = aheadCount * 7;
+    // 1 minute allocated per person ahead
+    let totalMins = aheadCount * 1;
 
-    // Add remaining/overtime estimation for person currently in consultation room
     if(servingCreatedAt && mine.createdAt > servingCreatedAt){
       const elapsedMs = Date.now() - servingCreatedAt;
       const elapsedMins = Math.floor(elapsedMs / 60000);
 
       let currentPatientRem = 0;
-      if (elapsedMins < 7) {
-        currentPatientRem = 7 - elapsedMins;
+      if (elapsedMins < 1) {
+        currentPatientRem = 1 - elapsedMins;
       } else {
-        // Base 7 minutes finished -> add 3 min chunks recursively
-        const overtimeMins = elapsedMins - 7;
-        const extraChunks = Math.floor(overtimeMins / 3) + 1;
-        const totalAllocated = 7 + (extraChunks * 3);
+        // Exceeded 1 minute -> add 1 minute chunks recursively
+        const overtimeMins = elapsedMins - 1;
+        const extraChunks = Math.floor(overtimeMins / 1) + 1;
+        const totalAllocated = 1 + (extraChunks * 1);
         currentPatientRem = totalAllocated - elapsedMins;
       }
       totalMins += Math.max(1, currentPatientRem);
@@ -305,7 +302,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
 
-        // Play Alert Chime whenever queue advances / people ahead decreases
         if(lastAheadCount !== null && ahead < lastAheadCount && ahead >= 0){
           playAlertChime();
         }
@@ -359,10 +355,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     document.getElementById('modeNote').textContent = "Can't connect to live database.";
   });
 
-  // Refresh estimated time timer every 10 seconds live on screen
+  // Fast auto-refresh every 3 seconds for live presentation demo
   setInterval(() => {
     if (myTicket) render();
-  }, 10000);
+  }, 3000);
 
   const nameInput = document.getElementById('nameInput');
   const idInput = document.getElementById('idInput');
