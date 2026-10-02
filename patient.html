@@ -36,6 +36,8 @@ body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-
 .status.now{color:var(--coral);font-weight:700;}
 button.primary{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
 button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;}
+button.simulate{margin-top:10px;width:100%;padding:10px;border:1px dashed var(--teal);border-radius:10px;background:rgba(20,107,98,0.06);color:var(--teal);font:inherit;font-weight:600;font-size:.85rem;cursor:pointer;}
+button.simulate:active{background:rgba(20,107,98,0.18);}
 .field{text-align:left;margin-bottom:14px;}
 .fieldLabel{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px;}
 .idInput{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.95rem;}
@@ -94,6 +96,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let myTicket = null;
   let audioCtx = null;
   let lastPlayedTurnKey = null;
+  let isSimulatedTurn = false; // toggle for prototype demo mode
 
   function initAudio(){
     try {
@@ -105,14 +108,13 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
-  // VERY LOUD DUAL-TONE ALARM FOR THE PATIENT WHEN THEIR TURN ARRIVES
+  // VERY LOUD DUAL-TONE ALARM FOR THE PATIENT
   function playTurnAlarm(){
     try {
       initAudio();
       if(!audioCtx) return;
       const now = audioCtx.currentTime;
 
-      // First beep high tone
       const osc1 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'square';
@@ -124,7 +126,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       osc1.start(now);
       osc1.stop(now + 0.35);
 
-      // Second beep higher tone immediately following
       const osc2 = audioCtx.createOscillator();
       const gain2 = audioCtx.createGain();
       osc2.type = 'square';
@@ -161,6 +162,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
   function clearMyTicket(){
     myTicket = null;
+    isSimulatedTurn = false;
     lastPlayedTurnKey = null;
     try{ localStorage.removeItem('miniclinic_ticket'); }catch(e){}
   }
@@ -184,12 +186,12 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } else {
       const ticketStr = mine.ticketNumber || fmt(mine.ticketSeq);
       let statusHtml;
+      let isMyTurn = (servingCreatedAt && mine.createdAt === servingCreatedAt) || isSimulatedTurn;
 
-      if(servingCreatedAt && mine.createdAt === servingCreatedAt){
+      if(isMyTurn){
         statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
         
-        // Trigger the LOUD alarm for the patient
-        const turnKey = mine.id + '_' + servingCreatedAt;
+        const turnKey = mine.id + '_' + (servingCreatedAt || 'simulated');
         if (lastPlayedTurnKey !== turnKey) {
           lastPlayedTurnKey = turnKey;
           playTurnAlarm();
@@ -207,9 +209,16 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         <div class="num">${ticketStr}</div>
         <div class="seam"></div>
         ${statusHtml}
-        <button class="ghost" id="newTicketBtn" style="margin-top:16px;display:inline-block;font-weight:600;">Done / Get a new number</button>
+        <button class="simulate" id="simulateBtn">⚡ Simulate Turn Alert (Demo)</button>
+        <button class="ghost" id="newTicketBtn" style="margin-top:12px;display:inline-block;font-weight:600;">Done / Get a new number</button>
       `;
       takeSection.style.display = 'none';
+
+      document.getElementById('simulateBtn').onclick = () => {
+        initAudio();
+        isSimulatedTurn = true;
+        render();
+      };
 
       document.getElementById('newTicketBtn').onclick = () => {
         clearMyTicket();
@@ -273,6 +282,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       const savedTicket = data.tickets ? data.tickets[ticketId] : null;
       if (savedTicket) {
         myTicket = savedTicket;
+        isSimulatedTurn = false;
         saveMyTicket();
         nameInput.value = '';
         idInput.value = '';
