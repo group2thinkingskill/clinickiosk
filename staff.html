@@ -22,7 +22,7 @@ body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-
 .brand h1{font-size:1.2rem;font-weight:700;margin:0;color:var(--ink);}
 .brand .sub{color:var(--ink-soft);font-size:.8rem;display:block;}
 .card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;}
-.section-title{font-size:.78rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.section-title{font-size:.78rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
 .serving-box{text-align:center;padding:18px 0;}
 .serving-num{font-family:'IBM Plex Mono',monospace;font-size:3.2rem;font-weight:700;color:var(--teal);line-height:1;margin-bottom:8px;}
 .serving-details{color:var(--ink-soft);font-size:.95rem;}
@@ -31,7 +31,9 @@ button.primary{padding:14px;border:none;border-radius:10px;background:var(--teal
 button.primary:active{opacity:0.8;}
 button.danger{padding:14px;border:none;border-radius:10px;background:rgba(239,123,100,0.15);color:var(--coral);border:1px solid var(--coral);font:inherit;font-weight:600;font-size:.95rem;cursor:pointer;}
 button.danger:active{background:rgba(239,123,100,0.3);}
-button.secondary{padding:10px 14px;border:none;border-radius:8px;background:var(--line);color:var(--ink);font:inherit;font-weight:600;font-size:.85rem;cursor:pointer;}
+button.secondary{padding:8px 12px;border:none;border-radius:8px;background:var(--line);color:var(--ink);font:inherit;font-weight:600;font-size:.8rem;cursor:pointer;}
+button.secondary.active{background:var(--teal);color:#0E1B1A;}
+.filter-tabs{display:flex; gap:6px;}
 table{width:100%; border-collapse:collapse; margin-top:12px; font-size:.9rem;}
 th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line);}
 th{color:var(--ink-soft); font-size:.75rem; text-transform:uppercase; letter-spacing:.06em;}
@@ -80,8 +82,17 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
 
   <div class="card">
     <div class="section-title">
-      <span>Daily Patient Registry Log</span>
-      <button class="secondary" id="resetRegistryBtn">Reset Daily Registry</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>Daily Patient Registry Log</span>
+        <span id="todayCountBadge" class="badge">0 today</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div class="filter-tabs">
+          <button class="secondary active" id="filterTodayBtn">Today Only</button>
+          <button class="secondary" id="filterAllBtn">All History</button>
+        </div>
+        <button class="secondary" id="resetRegistryBtn" style="background:rgba(239,123,100,0.15);color:var(--coral);border:1px solid var(--coral);">Reset Daily Registry</button>
+      </div>
     </div>
     <div style="overflow-x:auto;">
       <table>
@@ -121,6 +132,7 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
   let ticketsList = [];
   let registryList = [];
   let servingCreatedAt = null;
+  let viewMode = 'today'; // 'today' or 'all'
 
   const fmt = n => 'A' + String(n).padStart(3, '0');
 
@@ -171,20 +183,47 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
       `).join('');
     }
 
+    // Calculate today's count & filter
+    const todayStr = new Date().toDateString();
+    const todayRegistry = registryList.filter(r => new Date(r.createdAt).toDateString() === todayStr);
+    
+    document.getElementById('todayCountBadge').textContent = todayRegistry.length + (todayRegistry.length === 1 ? ' today' : ' today');
+
+    const displayedRegistry = viewMode === 'today' ? todayRegistry : registryList;
     const regBody = document.getElementById('registryBody');
-    if (registryList.length === 0) {
-      regBody.innerHTML = `<tr><td colspan="4" class="empty-row">No patients registered today</td></tr>`;
+
+    if (displayedRegistry.length === 0) {
+      regBody.innerHTML = `<tr><td colspan="4" class="empty-row">${viewMode === 'today' ? 'No patients registered today' : 'No registry history found'}</td></tr>`;
     } else {
-      regBody.innerHTML = registryList.map(r => `
-        <tr>
-          <td class="mono" style="font-weight:600;">${r.ticketNumber || fmt(r.ticketSeq)}</td>
-          <td>${r.name}</td>
-          <td class="mono">${r.idNumber}</td>
-          <td class="mono" style="font-size:0.8rem;color:var(--ink-soft);">${new Date(r.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</td>
-        </tr>
-      `).join('');
+      regBody.innerHTML = displayedRegistry.map(r => {
+        const d = new Date(r.createdAt);
+        const dateFormatted = d.toLocaleDateString([], {year: 'numeric', month: '2-digit', day: '2-digit'});
+        const timeFormatted = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        return `
+          <tr>
+            <td class="mono" style="font-weight:600;">${r.ticketNumber || fmt(r.ticketSeq)}</td>
+            <td>${r.name}</td>
+            <td class="mono">${r.idNumber}</td>
+            <td class="mono" style="font-size:0.8rem;color:var(--ink-soft);">${dateFormatted}, ${timeFormatted}</td>
+          </tr>
+        `;
+      }).join('');
     }
   }
+
+  document.getElementById('filterTodayBtn').onclick = () => {
+    viewMode = 'today';
+    document.getElementById('filterTodayBtn').classList.add('active');
+    document.getElementById('filterAllBtn').classList.remove('active');
+    renderStaff();
+  };
+
+  document.getElementById('filterAllBtn').onclick = () => {
+    viewMode = 'all';
+    document.getElementById('filterAllBtn').classList.add('active');
+    document.getElementById('filterTodayBtn').classList.remove('active');
+    renderStaff();
+  };
 
   document.getElementById('callNextBtn').onclick = () => {
     const waiting = servingCreatedAt ? ticketsList.filter(t => t.createdAt > servingCreatedAt) : ticketsList;
