@@ -109,7 +109,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
-  // Fast, sharp, snappy active turn alarm
   function playTurnAlarm(){
     try {
       initAudio();
@@ -193,7 +192,12 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
     let mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
 
-    // Personalized greeting if patient name is available
+    // If myTicket is set locally but no longer exists in Firebase (e.g. queue cleared by staff), clear local state
+    if(myTicket && ticketsList.length > 0 && !ticketsList.some(x => x.id === myTicket.id)){
+      clearMyTicket();
+      mine = null;
+    }
+
     if (mine && mine.name) {
       document.getElementById('greetingHeader').textContent = `${greetingStr}, ${mine.name}!`;
     } else {
@@ -283,6 +287,12 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     const data = snapshot.val() || {};
     ticketsList = Object.values(data.tickets || {}).sort((a, b) => a.createdAt - b.createdAt);
     servingCreatedAt = data.servingCreatedAt || null;
+
+    // If tickets are completely wiped out from Firebase, clear local ticket immediately
+    if (ticketsList.length === 0 && myTicket) {
+      clearMyTicket();
+    }
+
     document.getElementById('modeNote').textContent = 'Connected — live Firebase cloud kiosk';
     render();
   });
