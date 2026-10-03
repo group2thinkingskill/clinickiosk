@@ -232,7 +232,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         statusHtml = `<div class="status">Your turn has passed / completed</div>`;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
-        const estMinutes = (servingCreatedAt ? 1 : 0) + ahead;
+        
+        // Calculate extra delay minutes if the current doctor session takes longer than 1 minute
+        const currentSessionElapsedMinutes = servingCreatedAt ? Math.floor((Date.now() - servingCreatedAt) / 60000) : 0;
+        const estMinutes = ahead + Math.max(0, currentSessionElapsedMinutes);
         
         if (ahead === 2) {
           const aheadKey = mine.id + '_ahead_2';
@@ -302,6 +305,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     render();
   });
 
+  // Automatically re-render every 5 seconds so wait time ticks up live even when idle!
+  setInterval(render, 5000);
+
   const nameInput = document.getElementById('nameInput');
   const idInput = document.getElementById('idInput');
   const takeBtn = document.getElementById('takeBtn');
@@ -357,7 +363,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     });
   };
 
-  loadMyTicket();
+    loadMyTicket();
 </script>
 </body>
 </html>
