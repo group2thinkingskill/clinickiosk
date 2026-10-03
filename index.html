@@ -116,11 +116,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       if(!audioCtx) return;
       const now = audioCtx.currentTime;
 
-      // Note 1 (Fast & sharp)
       const osc1 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'square';
-      osc1.frequency.setValueAtTime(987.77, now); // B5 note
+      osc1.frequency.setValueAtTime(987.77, now);
       gain1.gain.setValueAtTime(1.0, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
       osc1.connect(gain1);
@@ -128,11 +127,10 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       osc1.start(now);
       osc1.stop(now + 0.15);
 
-      // Note 2 (Quick follow-up beep)
       const osc2 = audioCtx.createOscillator();
       const gain2 = audioCtx.createGain();
       osc2.type = 'square';
-      osc2.frequency.setValueAtTime(1318.51, now + 0.18); // E6 note
+      osc2.frequency.setValueAtTime(1318.51, now + 0.18);
       gain2.gain.setValueAtTime(1.0, now + 0.18);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.33);
       osc2.connect(gain2);
@@ -142,7 +140,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e){}
   }
 
-  // Warning alert when 2 people are ahead (gentle single chime)
   function playAheadWarningAlarm(){
     try {
       initAudio();
@@ -152,7 +149,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, now); // D5 note
+      osc.frequency.setValueAtTime(587.33, now);
       gain.gain.setValueAtTime(0.8, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       osc.connect(gain);
@@ -193,15 +190,21 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   function render(){
     const hr = new Date().getHours();
     const greetingStr = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
-    document.getElementById('greetingHeader').textContent = `${greetingStr}!`;
+
+    let mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
+
+    // Personalized greeting if patient name is available
+    if (mine && mine.name) {
+      document.getElementById('greetingHeader').textContent = `${greetingStr}, ${mine.name}!`;
+    } else {
+      document.getElementById('greetingHeader').textContent = `${greetingStr}!`;
+    }
 
     const w = getWaitingTickets();
     document.getElementById('patientQueueInfo').textContent = w.length + (w.length === 1 ? ' person currently waiting' : ' people currently waiting');
 
     const card = document.getElementById('patientCard');
     const takeSection = document.getElementById('takeSection');
-
-    let mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
 
     if(!mine){
       card.innerHTML = `<div class="label">No ticket yet</div><div class="num" style="color:var(--ink-soft)">— — —</div>`;
@@ -252,7 +255,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     }
   }
 
-  // "+ Add Test Person" button functionality for demo
   document.getElementById('addPersonBtn').onclick = () => {
     const demoNames = ["Siti Aminah", "Ahmad Zaki", "Ravi Kumar", "Chong Wei", "Nurul Ain", "Lim Mei Ling"];
     const randomName = demoNames[Math.floor(Math.random() * demoNames.length)];
