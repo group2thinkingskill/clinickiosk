@@ -109,35 +109,38 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     } catch(e) {}
   }
 
-  // Extended ~2.5 second attention-grabbing turn alarm (repeating crisp hospital chime pattern)
+  // Extended ~2.5 second attention-grabbing turn alarm (double-chime pattern repeated 4 times)
   function playTurnAlarm(){
     try {
       initAudio();
       if(!audioCtx) return;
-      const now = audioCtx.currentTime;
+      
+      const chimeTimes = [0.0, 0.6, 1.2, 1.8];
+      
+      chimeTimes.forEach(timeOffset => {
+        const now = audioCtx.currentTime + timeOffset;
+        
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1046.50, now); // C6 note
+        gain1.gain.setValueAtTime(0.7, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.35);
 
-      const notes = [
-        { freq: 987.77, start: 0.0, duration: 0.2 },   // Beep 1
-        { freq: 1318.51, start: 0.3, duration: 0.2 },  // Beep 2
-        { freq: 987.77, start: 0.7, duration: 0.2 },   // Beep 3
-        { freq: 1318.51, start: 1.0, duration: 0.2 },  // Beep 4
-        { freq: 1567.98, start: 1.5, duration: 0.5 }   // Final longer high alert note
-      ];
-
-      notes.forEach(n => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(n.freq, now + n.start);
-        
-        gain.gain.setValueAtTime(0.9, now + n.start);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + n.start + n.duration);
-        
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        
-        osc.start(now + n.start);
-        osc.stop(now + n.start + n.duration);
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1318.51, now + 0.15); // E6 note
+        gain2.gain.setValueAtTime(0.7, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.5);
       });
     } catch(e){}
   }
@@ -195,6 +198,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
     let mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
 
+    // Auto-clear local state if queue was cleared by staff
     if(myTicket && ticketsList.length > 0 && !ticketsList.some(x => x.id === myTicket.id)){
       clearMyTicket();
       mine = null;
