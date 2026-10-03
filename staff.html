@@ -40,6 +40,8 @@ th{color:var(--ink-soft); font-size:.75rem; text-transform:uppercase; letter-spa
 td.mono{font-family:'IBM Plex Mono',monospace;}
 .empty-row{text-align:center; color:var(--ink-soft); padding:24px;}
 .badge{display:inline-block; padding:3px 8px; border-radius:6px; font-size:.75rem; font-weight:600; background:rgba(79,195,175,0.15); color:var(--teal);}
+.searchInput{width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font:inherit; font-size:.9rem; outline:none;}
+.searchInput:focus{border-color:var(--teal);}
 </style>
 </head>
 <body>
@@ -47,6 +49,13 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
   <div class="brand">
     <div class="mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E1B1A" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg></div>
     <div><h1>Staff Control Panel</h1><span class="sub">Mini Clinic — POLIMAS</span></div>
+  </div>
+
+  <!-- Quick Search Card -->
+  <div class="card">
+    <div class="section-title">Quick Patient Search</div>
+    <input type="text" id="searchInput" class="searchInput" placeholder="Search by patient name or 12-digit IC number..." autocomplete="off">
+    <div id="searchResults" style="margin-top:12px;"></div>
   </div>
 
   <div class="card">
@@ -146,6 +155,7 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
     servingCreatedAt = data.servingCreatedAt || null;
 
     renderStaff();
+    handleSearch(); // Re-run search filter if user is actively searching
   });
 
   function renderStaff(){
@@ -210,6 +220,52 @@ td.mono{font-family:'IBM Plex Mono',monospace;}
       }).join('');
     }
   }
+
+  // Search Logic
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+
+  function handleSearch(){
+    const query = searchInput.value.trim().toLowerCase();
+    if(!query) {
+      searchResults.innerHTML = '';
+      return;
+    }
+
+    // Combine tickets and registry, removing duplicates by ID
+    const allPatientsMap = {};
+    registryList.forEach(r => allPatientsMap[r.id] = r);
+    ticketsList.forEach(t => { if(!allPatientsMap[t.id]) allPatientsMap[t.id] = t; });
+    const allPatients = Object.values(allPatientsMap);
+
+    const matches = allPatients.filter(p => 
+      (p.name && p.name.toLowerCase().includes(query)) || 
+      (p.idNumber && p.idNumber.includes(query)) ||
+      (p.ticketNumber && p.ticketNumber.toLowerCase().includes(query))
+    );
+
+    if(matches.length === 0){
+      searchResults.innerHTML = `<div style="color:var(--ink-soft); font-size:0.85rem; padding:4px 0;">No matching patients found.</div>`;
+      return;
+    }
+
+    searchResults.innerHTML = `
+      <div style="font-size:0.75rem; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;">Found ${matches.length} result(s)</div>
+      <div style="max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+        ${matches.map(m => `
+          <div style="background:var(--paper); padding:8px 12px; border-radius:8px; border:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;">
+            <div>
+              <strong style="color:var(--teal); font-family:'IBM Plex Mono',monospace;">${m.ticketNumber || fmt(m.ticketSeq)}</strong> — 
+              <span>${m.name}</span> 
+              <span style="font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); font-size:0.8rem;">(${m.idNumber})</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  searchInput.addEventListener('input', handleSearch);
 
   document.getElementById('filterTodayBtn').onclick = () => {
     viewMode = 'today';
