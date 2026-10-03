@@ -34,6 +34,7 @@ body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font-
 .seam::before{left:-11px;} .seam::after{right:-11px;}
 .status{font-size:.95rem;color:var(--ink-soft);margin-top:4px;}
 .status.now{color:var(--coral);font-weight:700;}
+.est-time{font-size:0.88rem;color:var(--ink-soft);margin-top:8px;font-weight:500;}
 button.primary{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;}
 button.ghost{margin-top:12px;background:none;border:none;color:var(--ink-soft);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;}
 button.add-person{margin-top:14px;width:100%;padding:10px;border:1px dashed var(--teal);border-radius:10px;background:rgba(20,107,98,0.05);color:var(--teal);font:inherit;font-weight:600;font-size:0.85rem;cursor:pointer;}
@@ -103,27 +104,23 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     try {
       if(!audioCtx){
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) audioCtx = new AudioCtx();
+        if (AudioCtx) audioCtx is new AudioCtx();
       }
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     } catch(e) {}
   }
 
-  // Extended ~2.5 second attention-grabbing turn alarm (double-chime pattern repeated 4 times)
   function playTurnAlarm(){
     try {
       initAudio();
       if(!audioCtx) return;
-      
       const chimeTimes = [0.0, 0.6, 1.2, 1.8];
-      
       chimeTimes.forEach(timeOffset => {
         const now = audioCtx.currentTime + timeOffset;
-        
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(1046.50, now); // C6 note
+        osc1.frequency.setValueAtTime(1046.50, now);
         gain1.gain.setValueAtTime(0.7, now);
         gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
         osc1.connect(gain1);
@@ -134,7 +131,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1318.51, now + 0.15); // E6 note
+        osc2.frequency.setValueAtTime(1318.51, now + 0.15);
         gain2.gain.setValueAtTime(0.7, now + 0.15);
         gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
         osc2.connect(gain2);
@@ -150,7 +147,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       initAudio();
       if(!audioCtx) return;
       const now = audioCtx.currentTime;
-
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
@@ -198,7 +194,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
 
     let mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
 
-    // Auto-clear local state if queue was cleared by staff
     if(myTicket && ticketsList.length > 0 && !ticketsList.some(x => x.id === myTicket.id)){
       clearMyTicket();
       mine = null;
@@ -225,7 +220,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       let isMyTurn = (servingCreatedAt && mine.createdAt === servingCreatedAt);
 
       if(isMyTurn){
-        statusHtml = `<div class="status now">It's your turn — please proceed</div>`;
+        statusHtml = `<div class="status now">It's your turn — please proceed</div><div class="est-time">Est. wait: <strong style="color:var(--coral)">Now</strong></div>`;
         
         const turnKey = mine.id + '_' + servingCreatedAt;
         if (lastPlayedTurnKey !== turnKey) {
@@ -237,6 +232,8 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         statusHtml = `<div class="status">Your turn has passed / completed</div>`;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
+        // Calculate 1 minute per person ahead (plus current person being served if any)
+        const estMinutes = (servingCreatedAt ? 1 : 0) + ahead;
         
         if (ahead === 2) {
           const aheadKey = mine.id + '_ahead_2';
@@ -246,7 +243,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
           }
         }
 
-        statusHtml = ahead === 0 ? `<div class="status">You're next — please wait nearby</div>` : `<div class="status">${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you</div>`;
+        const personText = ahead === 0 ? "You're next — please wait nearby" : `${ahead} ${ahead === 1 ? 'person' : 'people'} ahead of you`;
+        statusHtml = `
+          <div class="status">${personText}</div>
+          <div class="est-time">Est. wait time: ~<strong>${estMinutes} ${estMinutes === 1 ? 'minute' : 'minutes'}</strong></div>
+        `;
       }
 
       card.innerHTML = `
