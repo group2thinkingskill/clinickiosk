@@ -104,7 +104,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     try {
       if(!audioCtx){
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) audioCtx is new AudioCtx();
+        if (AudioCtx) audioCtx = new AudioCtx();
       }
       if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     } catch(e) {}
@@ -232,7 +232,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
         statusHtml = `<div class="status">Your turn has passed / completed</div>`;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
-        // Calculate 1 minute per person ahead (plus current person being served if any)
         const estMinutes = (servingCreatedAt ? 1 : 0) + ahead;
         
         if (ahead === 2) {
