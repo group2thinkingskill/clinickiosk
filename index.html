@@ -101,6 +101,11 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
   let lastPlayedTurnKey = null;
   let lastPlayedAheadKey = null;
 
+  function getTodayDateStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   function initAudio(){
     try {
       if(!audioCtx){
@@ -196,11 +201,9 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     const hr = new Date().getHours();
     const greetingStr = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
 
-    // Use local ticket state safely to prevent refresh flickering
     let mine = myTicket ? (ticketsList.find(x => x.id === myTicket.id) || myTicket) : null;
 
     if (mine && mine.name) {
-      // Show just the first name for cleaner UI
       const firstName = mine.name.split(' ')[0];
       document.getElementById('greetingHeader').textContent = `${greetingStr}, ${firstName}!`;
     } else {
@@ -235,19 +238,15 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       } else {
         const ahead = w.filter(t => t.createdAt < mine.createdAt).length;
         
-        // Dynamic wait time algorithm that actively ticks up
         let queueStallMinutes = 0;
         
         if (servingCalledAt) {
-            // A patient is currently inside. Any time over 2 mins is considered a stall.
             const elapsedSession = Math.floor((Date.now() - servingCalledAt) / 60000);
             queueStallMinutes = Math.max(0, elapsedSession - 2); 
         } else if (w.length > 0) {
-            // Queue is idle. We base the stall delay on how long the FIRST person has been waiting.
             queueStallMinutes = Math.floor((Date.now() - w[0].createdAt) / 60000);
         }
 
-        // Base 2 minutes per person + live stall delay
         const estMinutes = (ahead * 2) + queueStallMinutes;
 
         if (ahead === 2) {
@@ -287,10 +286,19 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     const randomName = demoNames[Math.floor(Math.random() * demoNames.length)];
     const randomIc = '05' + Math.floor(1000000000 + Math.random() * 9000000000);
     const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const today = getTodayDateStr();
 
     db.ref().transaction((currentData) => {
       currentData = currentData || {};
-      currentData.lastSequence = (currentData.lastSequence || 0) + 1;
+      
+      // Auto-reset daily sequence if the date changes
+      if (currentData.lastSequenceDate !== today) {
+        currentData.lastSequence = 1;
+        currentData.lastSequenceDate = today;
+      } else {
+        currentData.lastSequence = (currentData.lastSequence || 0) + 1;
+      }
+      
       const seqNumber = currentData.lastSequence;
 
       currentData.tickets = currentData.tickets || {};
@@ -310,7 +318,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     const data = snapshot.val();
     
     if (!data) {
-      // If the database is completely empty (hard reset)
       ticketsList = [];
       servingCreatedAt = null;
       servingCalledAt = null;
@@ -322,10 +329,7 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
       
       if (myTicket) {
           const ticketStillExists = ticketsList.some(t => t.id === myTicket.id);
-          
-          // Staff explicitly cleared the queue (tickets node deleted, but sequence tracking kept)
           const queueClearedByStaff = data.lastSequence !== undefined && !data.tickets;
-          // Staff explicitly deleted just your ticket
           const ticketDeletedByStaff = data.tickets && !ticketStillExists;
           
           if (queueClearedByStaff || ticketDeletedByStaff) {
@@ -338,7 +342,6 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     render();
   });
 
-  // Re-render every 5 seconds to keep the stall time ticking up actively
   setInterval(render, 5000);
 
   const nameInput = document.getElementById('nameInput');
@@ -362,10 +365,19 @@ footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:.78rem;
     formErr.textContent = '';
     takeBtn.disabled = true;
     const ticketId = 't_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const today = getTodayDateStr();
 
     db.ref().transaction((currentData) => {
       currentData = currentData || {};
-      currentData.lastSequence = (currentData.lastSequence || 0) + 1;
+      
+      // Auto-reset daily sequence if the date changes
+      if (currentData.lastSequenceDate !== today) {
+        currentData.lastSequence = 1;
+        currentData.lastSequenceDate = today;
+      } else {
+        currentData.lastSequence = (currentData.lastSequence || 0) + 1;
+      }
+      
       const seqNumber = currentData.lastSequence;
 
       currentData.tickets = currentData.tickets || {};
